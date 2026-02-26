@@ -37,7 +37,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(request.password()));
 
         user.setFullName(request.fullName());
-        user.setRole(Role.valueOf(request.role().toUpperCase()));
+        user.setRole(Role.STUDENT);
         var savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
     }

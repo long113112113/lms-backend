@@ -18,9 +18,11 @@ import com.example.lms_backend.dto.user.UserResponse;
 import com.example.lms_backend.service.UserService;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/users")
+@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
     private final UserService userService;
 

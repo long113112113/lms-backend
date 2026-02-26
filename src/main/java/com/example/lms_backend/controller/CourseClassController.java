@@ -15,6 +15,7 @@ import com.example.lms_backend.dto.course.CreateCourseClassRequest;
 import com.example.lms_backend.service.CourseClassService;
 
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/course-classes")
@@ -30,6 +31,7 @@ public class CourseClassController {
         return ResponseEntity.ok(courseClassService.getAllCourseClasses(pageable));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<CourseClassResponse> createCourseClass(
             @Valid @RequestBody CreateCourseClassRequest request) {

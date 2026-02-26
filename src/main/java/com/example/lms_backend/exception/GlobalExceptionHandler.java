@@ -35,6 +35,15 @@ public class GlobalExceptionHandler {
                                 "timestamp", Instant.now().toString()));
         }
 
+        @ExceptionHandler(BadCredentialsException.class)
+        public ResponseEntity<Map<String, Object>> handleBadCredentials(BadCredentialsException ex) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                                "status", 401,
+                                "error", "Unauthorized",
+                                "message", ex.getMessage(),
+                                "timestamp", Instant.now().toString()));
+        }
+
         @ExceptionHandler(MethodArgumentNotValidException.class)
         public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
                 var errors = ex.getBindingResult().getFieldErrors().stream()
