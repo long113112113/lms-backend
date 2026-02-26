@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.lms_backend.dto.auth.LoginRequest;
+import com.example.lms_backend.dto.auth.LogoutRequest;
 import com.example.lms_backend.dto.auth.RefreshTokenRequest;
 import com.example.lms_backend.dto.auth.TokenResponse;
 import com.example.lms_backend.service.AuthService;
@@ -40,9 +41,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<Void> logout(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody LogoutRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        authService.logout(userId);
+        authService.logout(userId, request.deviceId());
         return ResponseEntity.noContent().build();
     }
 }

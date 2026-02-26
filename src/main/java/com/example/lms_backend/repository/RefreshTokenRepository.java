@@ -1,5 +1,6 @@
 package com.example.lms_backend.repository;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +16,14 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Stri
     @Modifying
     @Transactional
     int deleteByUser(User user);
+
+    @Modifying
+    @Transactional
+    int deleteByUserAndDeviceId(User user, String deviceId);
+
+    Optional<RefreshToken> findByUserAndDeviceId(User user, String deviceId);
+
+    @Modifying
+    @Transactional
+    int deleteByExpiryDateBefore(Instant now);
 }

@@ -27,6 +27,12 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "device_id", nullable = false, length = 100)
+    private String deviceId;
+
+    @Column(name = "device_name")
+    private String deviceName;
+
     @Column(name = "expiry_date", nullable = false)
     private Instant expiryDate;
 }

@@ -45,8 +45,9 @@ public class AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        // Return existing refresh token or create a new one
-        String refreshToken = createRefreshToken(user).getToken();
+        refreshTokenRepository.deleteByUserAndDeviceId(user, request.deviceId());
+
+        String refreshToken = createRefreshToken(user, request.deviceId(), request.deviceName()).getToken();
         String accessToken = generateAccessToken(user);
 
         return new TokenResponse(accessToken, refreshToken, "Bearer", 15 * 60);
@@ -65,8 +66,10 @@ public class AuthService {
                 })
                 .map(token -> {
                     User user = token.getUser();
+                    String deviceId = token.getDeviceId();
+                    String deviceName = token.getDeviceName();
                     refreshTokenRepository.delete(token); // Rotate the refresh token
-                    String newRefreshToken = createRefreshToken(user).getToken();
+                    String newRefreshToken = createRefreshToken(user, deviceId, deviceName).getToken();
                     String accessToken = generateAccessToken(user);
                     return new TokenResponse(accessToken, newRefreshToken, "Bearer", 15 * 60);
                 })
@@ -74,10 +77,10 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(UUID userId) {
+    public void logout(UUID userId, String deviceId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BadCredentialsException("Invalid user"));
-        refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.deleteByUserAndDeviceId(user, deviceId);
     }
 
     private String generateAccessToken(User user) {
@@ -95,11 +98,13 @@ public class AuthService {
         return jwtEncoder.encode(JwtEncoderParameters.from(accessClaims)).getTokenValue();
     }
 
-    private RefreshToken createRefreshToken(User user) {
+    private RefreshToken createRefreshToken(User user, String deviceId, String deviceName) {
         RefreshToken refreshToken = new RefreshToken();
 
         refreshToken.setUser(user);
         refreshToken.setToken(UUID.randomUUID().toString());
+        refreshToken.setDeviceId(deviceId);
+        refreshToken.setDeviceName(deviceName);
         refreshToken.setExpiryDate(Instant.now().plus(7, ChronoUnit.DAYS));
 
         return refreshTokenRepository.save(refreshToken);
