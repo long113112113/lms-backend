@@ -37,6 +37,7 @@ public class CourseClass extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String semester;
 
-    @Column(name = "teacher_id")
-    private UUID teacherId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "teacher_id")
+    private User teacher;
 }

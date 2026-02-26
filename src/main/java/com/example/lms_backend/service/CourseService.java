@@ -3,14 +3,13 @@ package com.example.lms_backend.service;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.course.CourseRequest;
 import com.example.lms_backend.dto.course.CourseResponse;
 import com.example.lms_backend.entity.Course;
 import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.repository.CourseRepository;
-
-import jakarta.transaction.Transactional;
 
 @Service
 public class CourseService {
@@ -20,6 +19,7 @@ public class CourseService {
         this.courseRepository = courseRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<CourseResponse> getAllCourses() {
         return courseRepository.findAll().stream().map(this::mapToResponse).toList();
     }

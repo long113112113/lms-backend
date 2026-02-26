@@ -39,6 +39,7 @@ public class CourseClassService {
         return mapToResponse(savedCourseClass);
     }
 
+    @Transactional(readOnly = true)
     public Page<CourseClassResponse> getAllCourseClasses(Pageable pageable) {
         return courseClassRepository.findAllWithCourse(pageable).map(this::mapToResponse);
     }
