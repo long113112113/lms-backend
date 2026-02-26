@@ -23,7 +23,7 @@ public class User extends BaseEntity {
     private String email;
 
     @Column(nullable = false)
-    private String password;// TODO: need encrypt
+    private String password;
 
     @Column(name = "full_name", nullable = false, length = 100)
     private String fullName;

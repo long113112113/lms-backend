@@ -39,3 +39,6 @@ NOTE.md
 
 # Environment Variables
 .env
+
+# RSA Keys
+*.pem

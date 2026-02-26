@@ -12,15 +12,19 @@ import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.exception.ResourceNotFoundException;
 import com.example.lms_backend.repository.CourseClassRepository;
 import com.example.lms_backend.repository.CourseRepository;
+import com.example.lms_backend.repository.UserRepository;
 
 @Service
 public class CourseClassService {
     private final CourseClassRepository courseClassRepository;
     private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
 
-    public CourseClassService(CourseClassRepository courseClassRepository, CourseRepository courseRepository) {
+    public CourseClassService(CourseClassRepository courseClassRepository, CourseRepository courseRepository,
+            UserRepository userRepository) {
         this.courseClassRepository = courseClassRepository;
         this.courseRepository = courseRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -34,7 +38,13 @@ public class CourseClassService {
         courseClass.setCourse(course);
         courseClass.setCode(request.code());
         courseClass.setSemester(request.semester());
-        courseClass.setTeacherId(request.teacherId());
+
+        if (request.teacherId() != null) {
+            var teacher = userRepository.findById(request.teacherId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+            courseClass.setTeacher(teacher);
+        }
+
         var savedCourseClass = courseClassRepository.save(courseClass);
         return mapToResponse(savedCourseClass);
     }
@@ -45,11 +55,13 @@ public class CourseClassService {
     }
 
     private CourseClassResponse mapToResponse(CourseClass courseClass) {
+        var teacher = courseClass.getTeacher();
         return new CourseClassResponse(
                 courseClass.getId(),
                 courseClass.getCode(),
                 courseClass.getSemester(),
-                courseClass.getTeacherId(),
+                teacher != null ? teacher.getId() : null,
+                teacher != null ? teacher.getFullName() : null,
                 courseClass.getCourse().getId(),
                 courseClass.getCourse().getName(),
                 courseClass.getCreatedAt(),
