@@ -1,0 +1,178 @@
+Downloading https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.3.1!
+
+Here are the highlights of this release:
+ - Test reporting improvements
+ - Error and warning improvements
+ - Build authoring improvements
+
+For more details see https://docs.gradle.org/9.3.1/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+> Task :compileJava
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :processAot
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.3)
+
+2026-02-27T02:24:33.645Z  INFO 4086 --- [lms-backend] [           main] c.e.lms_backend.LmsBackendApplication    : Starting LmsBackendApplication using Java 21.0.9 with PID 4086 (/app/build/classes/java/main started by jules in /app)
+2026-02-27T02:24:33.654Z  INFO 4086 --- [lms-backend] [           main] c.e.lms_backend.LmsBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-02-27T02:24:35.322Z  INFO 4086 --- [lms-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-27T02:24:35.398Z  INFO 4086 --- [lms-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 63 ms. Found 4 JPA repository interfaces.
+2026-02-27T02:24:37.443Z  INFO 4086 --- [lms-backend] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: AotMetamodel]
+2026-02-27T02:24:37.493Z  INFO 4086 --- [lms-backend] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.4.Final
+2026-02-27T02:24:38.036Z  INFO 4086 --- [lms-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-27T02:24:38.076Z  INFO 4086 --- [lms-backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [undefined/unknown]
+	Database driver: undefined/unknown
+	Database dialect: SpringDataJpaAotDialect
+	Database version: 0.0
+	Default catalog/schema: unknown/unknown
+	Autocommit mode: undefined/unknown
+	Isolation level: <unknown>
+	JDBC fetch size: undefined/unknown
+	Pool: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-02-27T02:24:39.313Z  INFO 4086 --- [lms-backend] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-27T02:24:40.482Z  INFO 4086 --- [lms-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+
+> Task :compileAotJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :processAotResources
+> Task :aotClasses
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.3)
+
+2026-02-27T02:24:48.844Z  INFO 4503 --- [lms-backend] [           main] c.e.lms_backend.LmsBackendApplication    : Starting LmsBackendApplication using Java 21.0.9 with PID 4503 (/app/build/classes/java/main started by jules in /app)
+2026-02-27T02:24:48.848Z  INFO 4503 --- [lms-backend] [           main] c.e.lms_backend.LmsBackendApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-02-27T02:24:49.858Z  INFO 4503 --- [lms-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-27T02:24:49.935Z  INFO 4503 --- [lms-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 67 ms. Found 4 JPA repository interfaces.
+2026-02-27T02:24:50.639Z  INFO 4503 --- [lms-backend] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-02-27T02:24:50.654Z  INFO 4503 --- [lms-backend] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-27T02:24:50.654Z  INFO 4503 --- [lms-backend] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.18]
+2026-02-27T02:24:50.759Z  INFO 4503 --- [lms-backend] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1852 ms
+2026-02-27T02:24:51.105Z  INFO 4503 --- [lms-backend] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-02-27T02:24:51.163Z  INFO 4503 --- [lms-backend] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.4.Final
+2026-02-27T02:24:51.705Z  INFO 4503 --- [lms-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-27T02:24:51.742Z  INFO 4503 --- [lms-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-27T02:24:51.929Z  INFO 4503 --- [lms-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:lms_db user=SA
+2026-02-27T02:24:51.931Z  INFO 4503 --- [lms-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-27T02:24:51.957Z  WARN 4503 --- [lms-backend] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-02-27T02:24:51.982Z  INFO 4503 --- [lms-backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:h2:mem:lms_db]
+	Database driver: H2 JDBC Driver
+	Database dialect: H2Dialect
+	Database version: 2.4.240
+	Default catalog/schema: LMS_DB/PUBLIC
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: 100
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-02-27T02:24:53.054Z  INFO 4503 --- [lms-backend] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate:
+    create table course_classes (
+        id uuid not null,
+        created_at timestamp(6) with time zone not null,
+        updated_at timestamp(6) with time zone not null,
+        code varchar(50) not null,
+        semester varchar(50) not null,
+        course_id uuid not null,
+        teacher_id uuid,
+        primary key (id)
+    )
+Hibernate:
+    create table courses (
+        id uuid not null,
+        created_at timestamp(6) with time zone not null,
+        updated_at timestamp(6) with time zone not null,
+        code varchar(50) not null,
+        credits integer not null,
+        description TEXT,
+        name varchar(255) not null,
+        primary key (id)
+    )
+Hibernate:
+    create table refresh_tokens (
+        token varchar(100) not null,
+        expiry_date timestamp(6) with time zone not null,
+        user_id uuid not null,
+        primary key (token)
+    )
+Hibernate:
+    create table users (
+        id uuid not null,
+        created_at timestamp(6) with time zone not null,
+        updated_at timestamp(6) with time zone not null,
+        email varchar(100) not null,
+        full_name varchar(100) not null,
+        password varchar(255) not null,
+        role enum ('ADMIN','STUDENT','TEACHER') not null,
+        primary key (id)
+    )
+Hibernate:
+    alter table if exists course_classes
+       drop constraint if exists UKmdeewqfqfih9ft75b0gbp9nrc
+Hibernate:
+    alter table if exists course_classes
+       add constraint UKmdeewqfqfih9ft75b0gbp9nrc unique (code)
+Hibernate:
+    alter table if exists courses
+       drop constraint if exists UK61og8rbqdd2y28rx2et5fdnxd
+Hibernate:
+    alter table if exists courses
+       add constraint UK61og8rbqdd2y28rx2et5fdnxd unique (code)
+Hibernate:
+    alter table if exists users
+       drop constraint if exists UK6dotkott2kjsp8vw4d0m25fb7
+Hibernate:
+    alter table if exists users
+       add constraint UK6dotkott2kjsp8vw4d0m25fb7 unique (email)
+Hibernate:
+    alter table if exists course_classes
+       add constraint FKif7yrbpyvht300qmcbkb58d2h
+       foreign key (course_id)
+       references courses
+Hibernate:
+    alter table if exists course_classes
+       add constraint FK3ls5syan8bwpsu9esggjfp1o5
+       foreign key (teacher_id)
+       references users
+Hibernate:
+    alter table if exists refresh_tokens
+       add constraint FK1lih5y2npsf8u5o3vhdb9y0os
+       foreign key (user_id)
+       references users
+2026-02-27T02:24:53.141Z  INFO 4503 --- [lms-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-27T02:24:53.283Z  INFO 4503 --- [lms-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-27T02:24:55.281Z  INFO 4503 --- [lms-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-02-27T02:24:55.388Z  INFO 4503 --- [lms-backend] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-02-27T02:24:55.399Z  INFO 4503 --- [lms-backend] [           main] c.e.lms_backend.LmsBackendApplication    : Started LmsBackendApplication in 7.022 seconds (process running for 7.439)
+2026-02-27T02:25:03.566Z  INFO 4503 --- [lms-backend] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-02-27T02:25:03.567Z  INFO 4503 --- [lms-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-02-27T02:25:03.569Z  INFO 4503 --- [lms-backend] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 2 ms
