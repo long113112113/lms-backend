@@ -3,8 +3,10 @@ package com.example.lms_backend.dto.auth;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import com.example.lms_backend.validation.SafeHtml;
+
 public record LoginRequest(
-                @NotBlank(message = "Email cant be null")
+                @SafeHtml @NotBlank(message = "Email cant be null")
                 @Size(max = 100, message = "Email cannot exceed 100 characters")
                 String email,
 
@@ -12,10 +14,10 @@ public record LoginRequest(
                 @Size(max = 72, message = "Password cannot exceed 72 characters")
                 String password,
 
-                @NotBlank(message = "Device ID cant be null")
+                @SafeHtml @NotBlank(message = "Device ID cant be null")
                 @Size(max = 100, message = "Device ID cannot exceed 100 characters")
                 String deviceId,
 
-                @Size(max = 100, message = "Device Name cannot exceed 100 characters")
+                @SafeHtml @Size(max = 100, message = "Device Name cannot exceed 100 characters")
                 String deviceName) {
 }

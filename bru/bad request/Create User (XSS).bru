@@ -1,0 +1,19 @@
+meta {
+  name: Create User (XSS)
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/users
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "\"><script>alert('xss')</script>@example.com",
+    "password": "user<script>alert(1)</script>123",
+    "fullName": "John <b onmouseover=alert(1)>Doe</b>"
+  }
+}

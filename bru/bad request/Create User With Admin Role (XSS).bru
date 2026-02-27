@@ -1,0 +1,24 @@
+meta {
+  name: Create User With Admin Role (XSS)
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:8080/api/users/admin
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "email": "<svg/onload=alert(1)>teacher1@example.com",
+    "password": "teacher@123<script>alert('xss')</script>",
+    "fullName": "New Teacher <i>HTML</i>",
+    "role": "TEACHER"
+  }
+}

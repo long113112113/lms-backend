@@ -1,0 +1,27 @@
+meta {
+  name: Edit User
+  type: http
+  seq: 3
+}
+
+put {
+  url: http://localhost:8080/api/users/1ad321ad-9c9d-145c-819c-9d74d1b70000
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "email": "user@example.com",
+    "fullName": "Jhon cena",
+    "role": "ADMIN"
+  }
+}
