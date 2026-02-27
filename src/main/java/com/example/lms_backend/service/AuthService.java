@@ -11,8 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.auth.LoginRequest;
-import com.example.lms_backend.dto.auth.RefreshTokenRequest;
-import com.example.lms_backend.dto.auth.TokenResponse;
 import com.example.lms_backend.entity.RefreshToken;
 import com.example.lms_backend.entity.User;
 import com.example.lms_backend.exception.BadCredentialsException;
@@ -26,8 +24,10 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
-
     private final RefreshTokenRepository refreshTokenRepository;
+
+    public record AuthResult(String accessToken, String refreshToken) {
+    }
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder,
             RefreshTokenRepository refreshTokenRepository) {
@@ -38,7 +38,7 @@ public class AuthService {
     }
 
     @Transactional
-    public TokenResponse login(LoginRequest request) {
+    public AuthResult login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
@@ -50,17 +50,16 @@ public class AuthService {
         String refreshToken = createRefreshToken(user, request.deviceId(), request.deviceName()).getToken();
         String accessToken = generateAccessToken(user);
 
-        return new TokenResponse(accessToken, refreshToken, "Bearer", 15 * 60);
+        return new AuthResult(accessToken, refreshToken);
     }
 
     @Transactional
-    public TokenResponse refreshToken(RefreshTokenRequest request) {
-        return refreshTokenRepository.findByToken(request.refreshToken())
+    public AuthResult refreshToken(String refreshTokenValue) {
+        return refreshTokenRepository.findByToken(refreshTokenValue)
                 .map(token -> {
                     if (token.getExpiryDate().isBefore(Instant.now())) {
                         refreshTokenRepository.delete(token);
-                        throw new BadCredentialsException(
-                                "Token was expired");
+                        throw new BadCredentialsException("Token was expired");
                     }
                     return token;
                 })
@@ -71,7 +70,7 @@ public class AuthService {
                     refreshTokenRepository.delete(token); // Rotate the refresh token
                     String newRefreshToken = createRefreshToken(user, deviceId, deviceName).getToken();
                     String accessToken = generateAccessToken(user);
-                    return new TokenResponse(accessToken, newRefreshToken, "Bearer", 15 * 60);
+                    return new AuthResult(accessToken, newRefreshToken);
                 })
                 .orElseThrow(() -> new BadCredentialsException("Not valid token"));
     }

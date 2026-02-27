@@ -1,0 +1,23 @@
+meta {
+  name: Create Course Class
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/course-classes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "courseId": 1,
+    "className": "Spring Boot Basics - Morning",
+    "details": "Class focusing on Spring Data JPA and Security"
+  }
+}

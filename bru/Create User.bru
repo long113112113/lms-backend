@@ -1,0 +1,25 @@
+meta {
+  name: Create User
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/users
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "email": "new.student@example.com",
+    "password": "strongPassword123!",
+    "role": "STUDENT",
+    "firstName": "John",
+    "lastName": "Doe"
+  }
+}
