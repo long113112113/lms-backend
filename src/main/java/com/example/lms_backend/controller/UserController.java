@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.lms_backend.dto.user.CreateUserRequest;
+import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
 import com.example.lms_backend.dto.user.UserResponse;
 import com.example.lms_backend.service.UserService;
 
@@ -44,6 +45,14 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         var newUser = userService.createUser(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+    }
+
+    @PostMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> createUserWithRole(
+            @Valid @RequestBody CreateUserWithRoleRequest request) {
+        var newUser = userService.createUserWithRole(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
     }
 }

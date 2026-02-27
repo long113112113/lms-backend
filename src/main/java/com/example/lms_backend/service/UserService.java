@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.user.CreateUserRequest;
+import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
 import com.example.lms_backend.dto.user.UserResponse;
 import com.example.lms_backend.entity.User;
 import com.example.lms_backend.entity.enums.Role;
@@ -38,6 +39,20 @@ public class UserService {
 
         user.setFullName(request.fullName());
         user.setRole(Role.STUDENT);
+        var savedUser = userRepository.save(user);
+        return mapToResponse(savedUser);
+    }
+
+    @Transactional
+    public UserResponse createUserWithRole(CreateUserWithRoleRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ResourceAlreadyExistsException("Email already exists");
+        }
+        var user = new User();
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setFullName(request.fullName());
+        user.setRole(request.role());
         var savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
     }

@@ -1,0 +1,24 @@
+meta {
+  name: Create Course Class (XSS)
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:8080/api/course-classes
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "courseId": "123e4567-e89b-12d3-a456-426614174000",
+    "code": "C<script>alert(1)</script>LASS01",
+    "semester": "Fall 2026 <img src=x onerror=alert(1)>",
+    "teacherId": "123e4567-e89b-12d3-a456-426614174001"
+  }
+}

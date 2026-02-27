@@ -50,6 +50,7 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testRuntimeOnly 'com.h2database:h2'
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.83'
+	implementation 'org.jsoup:jsoup:1.22.1'
 }
 
 tasks.named('test') {

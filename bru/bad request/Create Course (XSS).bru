@@ -1,0 +1,24 @@
+meta {
+  name: Create Course (XSS)
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/courses
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "code": "CS<script>alert(1)</script>101",
+    "name": "<a href='javascript:alert(1)'>Introduction to CS</a>",
+    "credits": 3,
+    "description": "An introductory course... <iframe src='javascript:alert(1)'>"
+  }
+}
