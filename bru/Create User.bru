@@ -7,19 +7,13 @@ meta {
 post {
   url: http://localhost:8080/api/users
   body: json
-  auth: bearer
-}
-
-auth:bearer {
-  token: {{access_token}}
+  auth: none
 }
 
 body:json {
   {
-    "email": "new.student@example.com",
-    "password": "strongPassword123!",
-    "role": "STUDENT",
-    "firstName": "John",
-    "lastName": "Doe"
+    "email": "user@example.com",
+    "password": "user@123",
+    "fullName": "John Doe"
   }
 }

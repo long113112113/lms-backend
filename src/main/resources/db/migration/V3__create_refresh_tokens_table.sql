@@ -1,5 +1,6 @@
 CREATE TABLE refresh_tokens (
-    token VARCHAR(100) PRIMARY KEY,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    token VARCHAR(100) NOT NULL UNIQUE,
     user_id UUID NOT NULL REFERENCES users(id),
     device_id VARCHAR(100) NOT NULL,
     device_name VARCHAR(255),

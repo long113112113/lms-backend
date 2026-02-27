@@ -2,6 +2,7 @@ package com.example.lms_backend.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -17,14 +18,15 @@ import com.example.lms_backend.exception.BadCredentialsException;
 import com.example.lms_backend.repository.RefreshTokenRepository;
 import com.example.lms_backend.repository.UserRepository;
 
-import java.util.UUID;
-
 @Service
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
+
+    private static final long REFRESH_TOKEN_VALIDITY_DAYS = 7;
+    private static final long ACCESS_TOKEN_VALIDITY_MINUTES = 15;
 
     public record AuthResult(String accessToken, String refreshToken) {
     }
@@ -44,13 +46,18 @@ public class AuthService {
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BadCredentialsException("Invalid email or password");
         }
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByUserAndDeviceId(user, request.deviceId())
+                .map(existing -> {
+                    existing.setToken(UUID.randomUUID().toString());
+                    existing.setExpiryDate(Instant.now().plus(REFRESH_TOKEN_VALIDITY_DAYS, ChronoUnit.DAYS));
+                    existing.setDeviceName(request.deviceName());
+                    return existing;
+                })
+                .orElseGet(() -> createRefreshToken(user, request.deviceId(), request.deviceName()));
 
-        refreshTokenRepository.deleteByUserAndDeviceId(user, request.deviceId());
-
-        String refreshToken = createRefreshToken(user, request.deviceId(), request.deviceName()).getToken();
         String accessToken = generateAccessToken(user);
-
-        return new AuthResult(accessToken, refreshToken);
+        return new AuthResult(accessToken, refreshToken.getToken());
     }
 
     @Transactional
@@ -61,16 +68,12 @@ public class AuthService {
                         refreshTokenRepository.delete(token);
                         throw new BadCredentialsException("Token was expired");
                     }
-                    return token;
-                })
-                .map(token -> {
+                    token.setToken(UUID.randomUUID().toString());
+                    token.setExpiryDate(Instant.now().plus(REFRESH_TOKEN_VALIDITY_DAYS, ChronoUnit.DAYS));
+
                     User user = token.getUser();
-                    String deviceId = token.getDeviceId();
-                    String deviceName = token.getDeviceName();
-                    refreshTokenRepository.delete(token); // Rotate the refresh token
-                    String newRefreshToken = createRefreshToken(user, deviceId, deviceName).getToken();
                     String accessToken = generateAccessToken(user);
-                    return new AuthResult(accessToken, newRefreshToken);
+                    return new AuthResult(accessToken, token.getToken());
                 })
                 .orElseThrow(() -> new BadCredentialsException("Not valid token"));
     }
@@ -84,12 +87,11 @@ public class AuthService {
 
     private String generateAccessToken(User user) {
         Instant now = Instant.now();
-        long accessTokenValidity = 15;
 
         JwtClaimsSet accessClaims = JwtClaimsSet.builder()
                 .issuer("lms-system")
                 .issuedAt(now)
-                .expiresAt(now.plus(accessTokenValidity, ChronoUnit.MINUTES))
+                .expiresAt(now.plus(ACCESS_TOKEN_VALIDITY_MINUTES, ChronoUnit.MINUTES))
                 .subject(user.getId().toString())
                 .claim("role", user.getRole().name())
                 .claim("type", "ACCESS")
@@ -104,7 +106,7 @@ public class AuthService {
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setDeviceId(deviceId);
         refreshToken.setDeviceName(deviceName);
-        refreshToken.setExpiryDate(Instant.now().plus(7, ChronoUnit.DAYS));
+        refreshToken.setExpiryDate(Instant.now().plus(REFRESH_TOKEN_VALIDITY_DAYS, ChronoUnit.DAYS));
 
         return refreshTokenRepository.save(refreshToken);
     }
