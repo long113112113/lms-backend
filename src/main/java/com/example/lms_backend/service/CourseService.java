@@ -34,8 +34,8 @@ public class CourseService {
         course.setName(request.name());
         course.setCredits(request.credits());
         course.setDescription(request.description());
-        var savedCource = courseRepository.save(course);
-        return mapToResponse(savedCource);
+        var savedCourse = courseRepository.save(course);
+        return mapToResponse(savedCourse);
     }
 
     private CourseResponse mapToResponse(Course course) {
