@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.user.CreateUserRequest;
 import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
+import com.example.lms_backend.dto.user.UpdateUserRequest;
 import com.example.lms_backend.dto.user.UserResponse;
 import com.example.lms_backend.entity.User;
 import com.example.lms_backend.entity.enums.Role;
@@ -55,6 +56,27 @@ public class UserService {
         user.setRole(request.role());
         var savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
+    }
+
+    @Transactional
+    public UserResponse updateUser(UUID id, UpdateUserRequest request) {
+        var user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new ResourceAlreadyExistsException("Email already exists");
+        }
+
+        user.setEmail(request.email());
+        user.setFullName(request.fullName());
+        user.setRole(request.role());
+
+        if (request.password() != null && !request.password().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.password()));
+        }
+
+        var updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser);
     }
 
     @Transactional(readOnly = true)
