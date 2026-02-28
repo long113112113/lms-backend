@@ -6,10 +6,11 @@ import com.example.lms_backend.validation.SafeHtml;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record UpdateUserRequest(
-        @SafeHtml @NotBlank(message = "Email is required") @Email(message = "Email format is invalid") String email,
-        @SafeHtml @NotBlank(message = "Full name is required") String fullName,
+        @SafeHtml @NotBlank(message = "Email is required") @Email(message = "Email format is invalid") @Size(max = 100, message = "Email cannot exceed 100 characters") String email,
+        @SafeHtml @NotBlank(message = "Full name is required") @Size(max = 100, message = "Full name cannot exceed 100 characters") String fullName,
         @NotNull(message = "Role is required") Role role,
-        String password) {
+        @Size(min = 8, max = 72, message = "Password must be between 8 and 72 characters") String password) {
 }
