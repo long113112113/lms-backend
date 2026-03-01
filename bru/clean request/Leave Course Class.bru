@@ -1,0 +1,15 @@
+meta {
+  name: Leave Course Class
+  type: http
+  seq: 15
+}
+
+delete {
+  url: http://localhost:8080/api/enrollments/course-class-id-here/leave
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

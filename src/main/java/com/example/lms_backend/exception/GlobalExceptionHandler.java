@@ -54,6 +54,13 @@ public class GlobalExceptionHandler {
                                 "timestamp", Instant.now().toString()));
         }
 
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<Map<String, Object>> handleCustomAccessDenied(AccessDeniedException ex) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                                "message", ex.getMessage(),
+                                "timestamp", Instant.now().toString()));
+        }
+
         @ExceptionHandler({
                         org.springframework.security.access.AccessDeniedException.class,
                         org.springframework.security.authorization.AuthorizationDeniedException.class

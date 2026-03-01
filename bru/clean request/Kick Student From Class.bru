@@ -1,0 +1,15 @@
+meta {
+  name: Kick Student From Class
+  type: http
+  seq: 16
+}
+
+delete {
+  url: http://localhost:8080/api/enrollments/course-class-id-here/kick/student-id-here
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

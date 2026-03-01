@@ -62,8 +62,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()// TODO: DEV only!
                         .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated())
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // TODO: DEV only!
                 .oauth2ResourceServer(
                         oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 

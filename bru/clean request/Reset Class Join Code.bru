@@ -1,0 +1,15 @@
+meta {
+  name: Reset Class Join Code
+  type: http
+  seq: 19
+}
+
+put {
+  url: http://localhost:8080/api/course-classes/course-class-id-here/reset-join-code
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

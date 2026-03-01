@@ -1,0 +1,15 @@
+meta {
+  name: Get Class Students
+  type: http
+  seq: 18
+}
+
+get {
+  url: http://localhost:8080/api/enrollments/class/course-class-id-here/students
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Join Course Class
+  type: http
+  seq: 14
+}
+
+post {
+  url: http://localhost:8080/api/enrollments/join
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}
+
+body:json {
+  {
+    "joinCode": "ABC1234"
+  }
+}

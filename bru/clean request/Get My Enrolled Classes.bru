@@ -1,11 +1,11 @@
 meta {
-  name: Get All Courses
+  name: Get My Enrolled Classes
   type: http
-  seq: 1
+  seq: 17
 }
 
 get {
-  url: http://localhost:8080/api/courses
+  url: http://localhost:8080/api/enrollments/my-classes
   body: none
   auth: bearer
 }

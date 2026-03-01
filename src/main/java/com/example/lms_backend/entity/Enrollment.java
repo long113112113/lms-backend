@@ -4,46 +4,46 @@ import java.util.UUID;
 
 import org.hibernate.annotations.UuidGenerator;
 
+import com.example.lms_backend.entity.enums.EnrollmentStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "course_classes")
+@Table(name = "enrollments", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "student_id", "course_class_id" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
-public class CourseClass extends BaseEntity {
+public class Enrollment extends BaseEntity {
+
     @Id
     @GeneratedValue
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "course_id", nullable = false)
-    private Course course;
-
-    @Column(nullable = false, unique = true, length = 50)
-    private String code;
-
-    @Column(nullable = false, length = 50)
-    private String semester;
+    @JoinColumn(name = "student_id", nullable = false)
+    private User student;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
-    private User teacher;
+    @JoinColumn(name = "course_class_id", nullable = false)
+    private CourseClass courseClass;
 
-    @Column(name = "join_code", nullable = false, unique = true, length = 7)
-    private String joinCode;
-
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private EnrollmentStatus status = EnrollmentStatus.ACTIVE;
 }
