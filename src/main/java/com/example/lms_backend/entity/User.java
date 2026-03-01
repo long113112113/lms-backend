@@ -3,7 +3,6 @@ package com.example.lms_backend.entity;
 import com.example.lms_backend.entity.enums.Role;
 import java.util.UUID;
 
-import org.hibernate.annotations.UuidGenerator;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,8 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class User extends BaseEntity {
     @Id
-    @GeneratedValue
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     @Column(nullable = false, unique = true, length = 100)
     private String email;

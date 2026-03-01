@@ -2,8 +2,6 @@ package com.example.lms_backend.entity;
 
 import java.util.UUID;
 
-import org.hibernate.annotations.UuidGenerator;
-
 import com.example.lms_backend.entity.enums.EnrollmentStatus;
 
 import jakarta.persistence.Column;
@@ -12,6 +10,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -31,8 +30,7 @@ import lombok.Setter;
 public class Enrollment extends BaseEntity {
 
     @Id
-    @GeneratedValue
-    @UuidGenerator(style = UuidGenerator.Style.TIME)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)

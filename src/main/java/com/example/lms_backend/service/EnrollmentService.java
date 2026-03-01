@@ -104,7 +104,16 @@ public class EnrollmentService {
     }
 
     @Transactional(readOnly = true)
-    public List<EnrollmentResponse> getClassStudents(UUID courseClassId) {
+    public List<EnrollmentResponse> getClassStudents(UUID courseClassId, UUID callerId, String role) {
+        CourseClass courseClass = courseClassRepository.findById(courseClassId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+
+        if (!"ADMIN".equals(role)) {
+            if (courseClass.getTeacher() == null || !courseClass.getTeacher().getId().equals(callerId)) {
+                throw new AccessDeniedException("You are not the teacher of this class");
+            }
+        }
+
         List<Enrollment> enrollments = enrollmentRepository
                 .findByCourseClassIdAndStatus(courseClassId, EnrollmentStatus.ACTIVE);
         return enrollments.stream().map(this::mapToResponse).toList();

@@ -61,6 +61,24 @@ public class GlobalExceptionHandler {
                                 "timestamp", Instant.now().toString()));
         }
 
+        @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<Map<String, Object>> handleTypeMismatch(
+                        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+                String error = String.format("Invalid value '%s' for parameter '%s'",
+                                ex.getValue(), ex.getName());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                                "message", error,
+                                "timestamp", Instant.now().toString()));
+        }
+
+        @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+        public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
+                        org.springframework.http.converter.HttpMessageNotReadableException ex) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                                "message", "Malformed JSON request or invalid data type",
+                                "timestamp", Instant.now().toString()));
+        }
+
         @ExceptionHandler({
                         org.springframework.security.access.AccessDeniedException.class,
                         org.springframework.security.authorization.AuthorizationDeniedException.class

@@ -75,8 +75,11 @@ public class EnrollmentController {
     @PreAuthorize("hasAnyRole('TEACHER', 'ADMIN')")
     @GetMapping("/class/{courseClassId}/students")
     public ResponseEntity<List<EnrollmentResponse>> getClassStudents(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID courseClassId) {
-        var enrollments = enrollmentService.getClassStudents(courseClassId);
+        UUID callerId = UUID.fromString(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
+        var enrollments = enrollmentService.getClassStudents(courseClassId, callerId, role);
         return ResponseEntity.ok(enrollments);
     }
 }
