@@ -53,7 +53,7 @@ public class UserService {
         user.setEmail(request.email());
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setFullName(request.fullName());
-        user.setRole(request.role());
+        user.setRole(Role.valueOf(request.role()));
         var savedUser = userRepository.save(user);
         return mapToResponse(savedUser);
     }
