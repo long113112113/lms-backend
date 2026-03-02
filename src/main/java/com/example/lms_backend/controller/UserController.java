@@ -3,6 +3,7 @@ package com.example.lms_backend.controller;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,11 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+        // SECURITY: Enforce maximum page size to prevent DoS (Out of Memory) and data exfiltration
+        int maxPageSize = 100;
+        if (pageable.getPageSize() > maxPageSize) {
+            pageable = PageRequest.of(pageable.getPageNumber(), maxPageSize, pageable.getSort());
+        }
         return ResponseEntity.ok(userService.getAllUsers(pageable));
     }
 
