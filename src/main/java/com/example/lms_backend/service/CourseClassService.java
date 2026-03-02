@@ -73,8 +73,14 @@ public class CourseClassService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseClassResponse> getAllCourseClasses(Pageable pageable) {
-        return courseClassRepository.findAllWithCourse(pageable).map(this::mapToResponse);
+    public Page<CourseClassResponse> getCourseClasses(UUID userId, String role, Pageable pageable) {
+        Page<CourseClass> page = switch (role) {
+            case "ADMIN" -> courseClassRepository.findAllBy(pageable);
+            case "TEACHER" -> courseClassRepository.findByTeacherId(userId, pageable);
+            case "STUDENT" -> courseClassRepository.findByEnrolledStudentId(userId, pageable);
+            default -> throw new AccessDeniedException("Unknown role: " + role);
+        };
+        return page.map(this::mapToResponse);
     }
 
     private String generateJoinCode() {

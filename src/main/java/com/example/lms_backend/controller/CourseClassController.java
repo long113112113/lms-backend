@@ -33,8 +33,12 @@ public class CourseClassController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<CourseClassResponse>> getAllCourseClasses(Pageable pageable) {
-        return ResponseEntity.ok(courseClassService.getAllCourseClasses(pageable));
+    public ResponseEntity<Page<CourseClassResponse>> getAllCourseClasses(
+            @AuthenticationPrincipal Jwt jwt,
+            Pageable pageable) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
+        return ResponseEntity.ok(courseClassService.getCourseClasses(userId, role, pageable));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

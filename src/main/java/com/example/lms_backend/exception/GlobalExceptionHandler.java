@@ -71,11 +71,27 @@ public class GlobalExceptionHandler {
                                 "timestamp", Instant.now().toString()));
         }
 
+        @ExceptionHandler(org.springframework.web.bind.MissingRequestCookieException.class)
+        public ResponseEntity<Map<String, Object>> handleMissingCookie(
+                        org.springframework.web.bind.MissingRequestCookieException ex) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                                "message", ex.getMessage(),
+                                "timestamp", Instant.now().toString()));
+        }
+
         @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
         public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
                         org.springframework.http.converter.HttpMessageNotReadableException ex) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                                 "message", "Malformed JSON request or invalid data type",
+                                "timestamp", Instant.now().toString()));
+        }
+
+        @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+        public ResponseEntity<Map<String, Object>> handleHttpRequestMethodNotSupported(
+                        org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+                return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Map.of(
+                                "message", "Request method '" + ex.getMethod() + "' is not supported",
                                 "timestamp", Instant.now().toString()));
         }
 
