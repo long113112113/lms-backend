@@ -3,6 +3,7 @@ package com.example.lms_backend.controller;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,11 @@ public class CourseClassController {
     public ResponseEntity<Page<CourseClassResponse>> getAllCourseClasses(
             @AuthenticationPrincipal Jwt jwt,
             Pageable pageable) {
+        int maxPageSize = 100;
+        if (pageable.getPageSize() > maxPageSize) {
+            pageable = PageRequest.of(pageable.getPageNumber(), maxPageSize,
+                    pageable.getSort());
+        }
         UUID userId = UUID.fromString(jwt.getSubject());
         String role = jwt.getClaimAsString("role");
         return ResponseEntity.ok(courseClassService.getCourseClasses(userId, role, pageable));
