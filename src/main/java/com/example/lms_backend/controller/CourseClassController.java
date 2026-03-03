@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.lms_backend.dto.course.CourseClassResponse;
@@ -36,6 +37,10 @@ public class CourseClassController {
     @GetMapping
     public ResponseEntity<Page<CourseClassResponse>> getAllCourseClasses(
             @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String semester,
+            @RequestParam(required = false) String courseName,
+            @RequestParam(required = false) String teacherName,
             Pageable pageable) {
         int maxPageSize = 100;
         if (pageable.getPageSize() > maxPageSize) {
@@ -44,7 +49,8 @@ public class CourseClassController {
         }
         UUID userId = UUID.fromString(jwt.getSubject());
         String role = jwt.getClaimAsString("role");
-        return ResponseEntity.ok(courseClassService.getCourseClasses(userId, role, pageable));
+        return ResponseEntity.ok(courseClassService.getCourseClasses(userId, role, code, semester, courseName,
+                teacherName, pageable));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -3,6 +3,7 @@ package com.example.lms_backend.repository;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import com.example.lms_backend.entity.Course;
@@ -10,7 +11,7 @@ import com.example.lms_backend.entity.Course;
 import java.util.Optional;
 
 @Repository
-public interface CourseRepository extends JpaRepository<Course, UUID> {
+public interface CourseRepository extends JpaRepository<Course, UUID>, JpaSpecificationExecutor<Course> {
     boolean existsByCode(String code);
 
     Optional<Course> findByCode(String code);

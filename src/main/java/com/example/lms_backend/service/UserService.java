@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import com.example.lms_backend.entity.enums.Role;
 import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.exception.ResourceNotFoundException;
 import com.example.lms_backend.repository.UserRepository;
+import com.example.lms_backend.specification.UserSpecification;
 
 @Service
 public class UserService {
@@ -80,8 +82,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(this::mapToResponse);
+    public Page<UserResponse> getAllUsers(String email, String fullName, Role role, Pageable pageable) {
+        Specification<User> spec = UserSpecification.build(email, fullName, role);
+        return userRepository.findAll(spec, pageable).map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)

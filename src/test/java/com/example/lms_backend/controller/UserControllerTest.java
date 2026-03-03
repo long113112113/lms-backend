@@ -33,6 +33,7 @@ import com.example.lms_backend.service.UserService;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -114,7 +115,8 @@ class UserControllerTest {
                 @DisplayName("200 - ADMIN can view list of users")
                 void shouldReturn200_WhenRoleIsAdmin() throws Exception {
                         var page = new PageImpl<>(List.of(sampleUserResponse(Role.STUDENT)), PageRequest.of(0, 10), 1);
-                        when(userService.getAllUsers(any(Pageable.class))).thenReturn(page);
+                        when(userService.getAllUsers(isNull(), isNull(), isNull(), any(Pageable.class)))
+                                        .thenReturn(page);
 
                         mockMvc.perform(get(URL).with(adminJwt())
                                         .param("page", "0")

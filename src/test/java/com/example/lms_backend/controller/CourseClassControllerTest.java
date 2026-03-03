@@ -30,6 +30,7 @@ import com.example.lms_backend.service.CourseClassService;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -131,7 +132,8 @@ class CourseClassControllerTest {
 
         private void testSuccessfulFetch(RequestPostProcessor jwtProcessor, String role) throws Exception {
             var page = new PageImpl<>(List.of(sampleClassResponse()), PageRequest.of(0, 10), 1);
-            when(courseClassService.getCourseClasses(any(UUID.class), eq(role), any(Pageable.class)))
+            when(courseClassService.getCourseClasses(any(UUID.class), eq(role), isNull(), isNull(), isNull(), isNull(),
+                    any(Pageable.class)))
                     .thenReturn(page);
 
             mockMvc.perform(get(URL).with(jwtProcessor)

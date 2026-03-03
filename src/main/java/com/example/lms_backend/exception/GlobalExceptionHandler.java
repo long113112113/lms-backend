@@ -54,6 +54,13 @@ public class GlobalExceptionHandler {
                                 "timestamp", Instant.now().toString()));
         }
 
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                                "message", ex.getMessage(),
+                                "timestamp", Instant.now().toString()));
+        }
+
         @ExceptionHandler(AccessDeniedException.class)
         public ResponseEntity<Map<String, Object>> handleCustomAccessDenied(AccessDeniedException ex) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(

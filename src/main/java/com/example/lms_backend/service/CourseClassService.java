@@ -5,18 +5,21 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.course.CourseClassResponse;
 import com.example.lms_backend.dto.course.CreateCourseClassRequest;
 import com.example.lms_backend.entity.CourseClass;
+import com.example.lms_backend.entity.enums.Role;
 import com.example.lms_backend.exception.AccessDeniedException;
 import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.exception.ResourceNotFoundException;
 import com.example.lms_backend.repository.CourseClassRepository;
 import com.example.lms_backend.repository.CourseRepository;
 import com.example.lms_backend.repository.UserRepository;
+import com.example.lms_backend.specification.CourseClassSpecification;
 
 @Service
 public class CourseClassService {
@@ -51,6 +54,11 @@ public class CourseClassService {
         if (request.teacherId() != null) {
             var teacher = userRepository.findById(request.teacherId())
                     .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+
+            if (teacher.getRole() != Role.TEACHER) {
+                throw new IllegalArgumentException("User provided is not a teacher");
+            }
+
             courseClass.setTeacher(teacher);
         }
 
@@ -73,14 +81,16 @@ public class CourseClassService {
     }
 
     @Transactional(readOnly = true)
-    public Page<CourseClassResponse> getCourseClasses(UUID userId, String role, Pageable pageable) {
-        Page<CourseClass> page = switch (role) {
-            case "ADMIN" -> courseClassRepository.findAllBy(pageable);
-            case "TEACHER" -> courseClassRepository.findByTeacherId(userId, pageable);
-            case "STUDENT" -> courseClassRepository.findByEnrolledStudentId(userId, pageable);
+    public Page<CourseClassResponse> getCourseClasses(UUID userId, String role,
+            String code, String semester, String courseName, String teacherName,
+            Pageable pageable) {
+        Specification<CourseClass> spec = switch (role) {
+            case "ADMIN" -> CourseClassSpecification.buildForAdmin(code, semester, courseName, teacherName);
+            case "TEACHER" -> CourseClassSpecification.buildForTeacher(userId, code, semester, courseName);
+            case "STUDENT" -> CourseClassSpecification.buildForStudent(userId, code, semester, courseName);
             default -> throw new AccessDeniedException("Unknown role: " + role);
         };
-        return page.map(this::mapToResponse);
+        return courseClassRepository.findAll(spec, pageable).map(this::mapToResponse);
     }
 
     private String generateJoinCode() {

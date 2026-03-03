@@ -4,6 +4,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +29,8 @@ import com.example.lms_backend.service.CourseService;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -90,34 +96,63 @@ class CourseControllerTest {
         }
 
         @Test
-        @DisplayName("200 - STUDENT can view courses")
+        @DisplayName("200 - STUDENT can view courses with pagination")
         void shouldReturn200_WhenRoleIsStudent() throws Exception {
-            when(courseService.getAllCourses()).thenReturn(List.of(sampleCourseResponse()));
+            var page = new PageImpl<>(List.of(sampleCourseResponse()), PageRequest.of(0, 10), 1);
+            when(courseService.getAllCourses(isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+                    .thenReturn(page);
 
-            mockMvc.perform(get(URL).with(studentJwt()))
+            mockMvc.perform(get(URL).with(studentJwt())
+                    .param("page", "0")
+                    .param("size", "10"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].code").value("CS101"));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].code").value("CS101"))
+                    .andExpect(jsonPath("$.totalElements").value(1));
         }
 
         @Test
         @DisplayName("200 - TEACHER can view courses")
         void shouldReturn200_WhenRoleIsTeacher() throws Exception {
-            when(courseService.getAllCourses()).thenReturn(List.of(sampleCourseResponse()));
+            var page = new PageImpl<>(List.of(sampleCourseResponse()), PageRequest.of(0, 10), 1);
+            when(courseService.getAllCourses(isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+                    .thenReturn(page);
 
-            mockMvc.perform(get(URL).with(teacherJwt()))
+            mockMvc.perform(get(URL).with(teacherJwt())
+                    .param("page", "0")
+                    .param("size", "10"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)));
+                    .andExpect(jsonPath("$.content", hasSize(1)));
         }
 
         @Test
         @DisplayName("200 - ADMIN can view courses")
         void shouldReturn200_WhenRoleIsAdmin() throws Exception {
-            when(courseService.getAllCourses()).thenReturn(List.of(sampleCourseResponse()));
+            var page = new PageImpl<>(List.of(sampleCourseResponse()), PageRequest.of(0, 10), 1);
+            when(courseService.getAllCourses(isNull(), isNull(), isNull(), isNull(), any(Pageable.class)))
+                    .thenReturn(page);
 
-            mockMvc.perform(get(URL).with(adminJwt()))
+            mockMvc.perform(get(URL).with(adminJwt())
+                    .param("page", "0")
+                    .param("size", "10"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)));
+                    .andExpect(jsonPath("$.content", hasSize(1)));
+        }
+
+        @Test
+        @DisplayName("200 - Filter courses by code")
+        void shouldReturn200_WhenFilterByCode() throws Exception {
+            var page = new PageImpl<>(List.of(sampleCourseResponse()), PageRequest.of(0, 10), 1);
+            when(courseService.getAllCourses(eq("CS"), isNull(), isNull(), isNull(), any(Pageable.class)))
+                    .thenReturn(page);
+
+            mockMvc.perform(get(URL).with(studentJwt())
+                    .param("code", "CS")
+                    .param("page", "0")
+                    .param("size", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].code").value("CS101"));
         }
     }
 
@@ -320,6 +355,87 @@ class CourseControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.code").value("CS101"))
                     .andExpect(jsonPath("$.credits").value(3));
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // 3. PUT /api/courses/{id} (updateCourse)
+    // ═══════════════════════════════════════════════
+    @Nested
+    @DisplayName("PUT /api/courses/{id}")
+    class UpdateCourse {
+        private static final String URL = "/api/courses/{id}";
+
+        private static final String VALID_BODY = """
+                {
+                    "code": "CS101",
+                    "name": "Intro to CS Updated",
+                    "credits": 4,
+                    "description": "Updated concepts"
+                }
+                """;
+
+        @Test
+        @DisplayName("401 - Unauthenticated request")
+        void shouldReturn401_WhenUnauthenticated() throws Exception {
+            mockMvc.perform(put(URL, COURSE_ID)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(VALID_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("403 - STUDENT cannot update course")
+        void shouldReturn403_WhenRoleIsStudent() throws Exception {
+            mockMvc.perform(put(URL, COURSE_ID).with(studentJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(VALID_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("200 - ADMIN successfully updates a course")
+        void shouldReturn200_WhenUpdatedSuccessfully() throws Exception {
+            when(courseService.updateCourse(eq(COURSE_ID), any(CourseRequest.class)))
+                    .thenReturn(sampleCourseResponse());
+
+            mockMvc.perform(put(URL, COURSE_ID).with(adminJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(VALID_BODY))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("CS101"));
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // 4. DELETE /api/courses/{id} (deleteCourse)
+    // ═══════════════════════════════════════════════
+    @Nested
+    @DisplayName("DELETE /api/courses/{id}")
+    class DeleteCourse {
+        private static final String URL = "/api/courses/{id}";
+
+        @Test
+        @DisplayName("401 - Unauthenticated request")
+        void shouldReturn401_WhenUnauthenticated() throws Exception {
+            mockMvc.perform(delete(URL, COURSE_ID))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("403 - STUDENT cannot delete course")
+        void shouldReturn403_WhenRoleIsStudent() throws Exception {
+            mockMvc.perform(delete(URL, COURSE_ID).with(studentJwt()))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("204 - ADMIN successfully deletes a course")
+        void shouldReturn204_WhenDeletedSuccessfully() throws Exception {
+            doNothing().when(courseService).deleteCourse(COURSE_ID);
+
+            mockMvc.perform(delete(URL, COURSE_ID).with(adminJwt()))
+                    .andExpect(status().isNoContent());
         }
     }
 }

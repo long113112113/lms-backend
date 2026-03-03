@@ -13,12 +13,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.lms_backend.dto.user.CreateUserRequest;
 import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
 import com.example.lms_backend.dto.user.UpdateUserRequest;
 import com.example.lms_backend.dto.user.UserResponse;
+import com.example.lms_backend.entity.enums.Role;
 import com.example.lms_backend.service.UserService;
 
 import jakarta.validation.Valid;
@@ -35,13 +37,17 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<UserResponse>> getAllUsers(Pageable pageable) {
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) Role role,
+            Pageable pageable) {
         int maxPageSize = 100;
         if (pageable.getPageSize() > maxPageSize) {
             pageable = PageRequest.of(pageable.getPageNumber(), maxPageSize,
                     pageable.getSort());
         }
-        return ResponseEntity.ok(userService.getAllUsers(pageable));
+        return ResponseEntity.ok(userService.getAllUsers(email, fullName, role, pageable));
     }
 
     @GetMapping("/{id}")
