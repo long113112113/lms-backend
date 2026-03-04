@@ -82,7 +82,59 @@ class UserControllerTest {
         }
 
         // ═══════════════════════════════════════════════
-        // 1. GET /api/users
+        // 1. GET /api/users/me
+        // ═══════════════════════════════════════════════
+        @Nested
+        @DisplayName("GET /api/users/me")
+        class GetCurrentUser {
+                private static final String URL = "/api/users/me";
+
+                @Test
+                @DisplayName("401 - Unauthenticated request")
+                void shouldReturn401_WhenUnauthenticated() throws Exception {
+                        mockMvc.perform(get(URL))
+                                        .andExpect(status().isUnauthorized());
+                }
+
+                @Test
+                @DisplayName("200 - STUDENT can view own info")
+                void shouldReturn200_WhenStudent() throws Exception {
+                        when(userService.getUserById(STUDENT_ID))
+                                        .thenReturn(sampleUserResponse(Role.STUDENT));
+
+                        mockMvc.perform(get(URL).with(studentJwt()))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.email").value("test@example.com"))
+                                        .andExpect(jsonPath("$.role").value("STUDENT"));
+                }
+
+                @Test
+                @DisplayName("200 - TEACHER can view own info")
+                void shouldReturn200_WhenTeacher() throws Exception {
+                        when(userService.getUserById(TEACHER_ID))
+                                        .thenReturn(sampleUserResponse(Role.TEACHER));
+
+                        mockMvc.perform(get(URL).with(teacherJwt()))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.email").value("test@example.com"))
+                                        .andExpect(jsonPath("$.role").value("TEACHER"));
+                }
+
+                @Test
+                @DisplayName("200 - ADMIN can view own info")
+                void shouldReturn200_WhenAdmin() throws Exception {
+                        when(userService.getUserById(ADMIN_ID))
+                                        .thenReturn(sampleUserResponse(Role.ADMIN));
+
+                        mockMvc.perform(get(URL).with(adminJwt()))
+                                        .andExpect(status().isOk())
+                                        .andExpect(jsonPath("$.email").value("test@example.com"))
+                                        .andExpect(jsonPath("$.role").value("ADMIN"));
+                }
+        }
+
+        // ═══════════════════════════════════════════════
+        // 2. GET /api/users
         // ═══════════════════════════════════════════════
         @Nested
         @DisplayName("GET /api/users")

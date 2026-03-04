@@ -45,12 +45,28 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshToken(
-            @CookieValue(name = "refresh_token") String refreshToken) {
-        AuthService.AuthResult result = authService.refreshToken(refreshToken);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, CookieUtils.createRefreshTokenCookie(result.refreshToken()).toString())
-                .header(HttpHeaders.SET_COOKIE, CookieUtils.createAccessTokenCookie(result.accessToken()).toString())
-                .build();
+            @CookieValue(name = "refresh_token", required = false) String refreshToken) {
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.SET_COOKIE, CookieUtils.deleteRefreshTokenCookie().toString())
+                    .header(HttpHeaders.SET_COOKIE, CookieUtils.deleteAccessTokenCookie().toString())
+                    .build();
+        }
+        try {
+            AuthService.AuthResult result = authService.refreshToken(refreshToken);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.SET_COOKIE,
+                            CookieUtils.createRefreshTokenCookie(result.refreshToken()).toString())
+                    .header(HttpHeaders.SET_COOKIE,
+                            CookieUtils.createAccessTokenCookie(result.accessToken()).toString())
+                    .build();
+        } catch (Exception e) {
+            // Token is revoked, expired, or invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.SET_COOKIE, CookieUtils.deleteRefreshTokenCookie().toString())
+                    .header(HttpHeaders.SET_COOKIE, CookieUtils.deleteAccessTokenCookie().toString())
+                    .build();
+        }
     }
 
     @PostMapping("/logout")
