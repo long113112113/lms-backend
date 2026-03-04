@@ -12,9 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.lms_backend.dto.auth.LoginRequest;
+import com.example.lms_backend.dto.auth.RegisterRequest;
 import com.example.lms_backend.entity.RefreshToken;
 import com.example.lms_backend.entity.User;
+import com.example.lms_backend.entity.enums.Role;
 import com.example.lms_backend.exception.BadCredentialsException;
+import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.repository.RefreshTokenRepository;
 import com.example.lms_backend.repository.UserRepository;
 
@@ -37,6 +40,23 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+    }
+
+    @Transactional
+    public AuthResult register(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.email())) {
+            throw new ResourceAlreadyExistsException("Email already exists");
+        }
+        var user = new User();
+        user.setEmail(request.email());
+        user.setPassword(passwordEncoder.encode(request.password()));
+        user.setFullName(request.fullName());
+        user.setRole(Role.STUDENT);
+        var savedUser = userRepository.save(user);
+
+        RefreshToken refreshToken = createRefreshToken(savedUser, request.deviceId(), request.deviceName());
+        String accessToken = generateAccessToken(savedUser);
+        return new AuthResult(accessToken, refreshToken.getToken());
     }
 
     @Transactional
@@ -79,10 +99,9 @@ public class AuthService {
     }
 
     @Transactional
-    public void logout(UUID userId, String deviceId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BadCredentialsException("Invalid user"));
-        refreshTokenRepository.deleteByUserAndDeviceId(user, deviceId);
+    public void logout(String refreshTokenValue) {
+        refreshTokenRepository.findByToken(refreshTokenValue)
+                .ifPresent(refreshTokenRepository::delete);
     }
 
     private String generateAccessToken(User user) {

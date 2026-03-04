@@ -20,7 +20,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.example.lms_backend.config.SecurityConfig;
-import com.example.lms_backend.dto.user.CreateUserRequest;
 import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
 import com.example.lms_backend.dto.user.UpdateUserRequest;
 import com.example.lms_backend.dto.user.UserResponse;
@@ -128,11 +127,10 @@ class UserControllerTest {
                 }
 
                 @Test
-                @DisplayName("400 - Wrong HTTP Method (POST instead of GET)")
+                @DisplayName("405 - Wrong HTTP Method (POST instead of GET)")
                 void shouldReturn405_WhenWrongMethod() throws Exception {
                         mockMvc.perform(post(URL).with(adminJwt()))
-                                        .andExpect(status().isBadRequest()); // Routes to POST /api/users lacking body
-                                                                             // -> 400
+                                        .andExpect(status().isMethodNotAllowed());
                 }
         }
 
@@ -203,148 +201,6 @@ class UserControllerTest {
                 void shouldReturn405_WhenWrongMethod() throws Exception {
                         mockMvc.perform(post(url()).with(adminJwt()))
                                         .andExpect(status().isMethodNotAllowed());
-                }
-        }
-
-        // ═══════════════════════════════════════════════
-        // 3. POST /api/users (createUser)
-        // ═══════════════════════════════════════════════
-        @Nested
-        @DisplayName("POST /api/users")
-        class CreateUser {
-                private static final String URL = "/api/users";
-
-                @Test
-                @DisplayName("400 - Validation errors (Blank email/pass)")
-                void shouldReturn400_WhenValidationFails() throws Exception {
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "",
-                                                            "password": "",
-                                                            "fullName": ""
-                                                        }
-                                                        """))
-                                        .andExpect(status().isBadRequest())
-                                        .andExpect(jsonPath("$.errors.email").exists())
-                                        .andExpect(jsonPath("$.errors.password").exists())
-                                        .andExpect(jsonPath("$.errors.fullName").exists());
-                }
-
-                @Test
-                @DisplayName("400 - Invalid Email Format")
-                void shouldReturn400_WhenEmailInvalidFormat() throws Exception {
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "not-an-email",
-                                                            "password": "password123",
-                                                            "fullName": "Test User"
-                                                        }
-                                                        """))
-                                        .andExpect(status().isBadRequest())
-                                        .andExpect(jsonPath("$.errors.email").value("Email format is invalid"));
-                }
-
-                @Test
-                @DisplayName("409 - Email already exists")
-                void shouldReturn409_WhenEmailExists() throws Exception {
-                        when(userService.createUser(any(CreateUserRequest.class)))
-                                        .thenThrow(new ResourceAlreadyExistsException("Email already exists"));
-
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "test@example.com",
-                                                            "password": "password123",
-                                                            "fullName": "Test User"
-                                                        }
-                                                        """))
-                                        .andExpect(status().isConflict())
-                                        .andExpect(jsonPath("$.message").value("Email already exists"));
-                }
-
-                @Test
-                @DisplayName("201 - Successfully create user (Public endpoint)")
-                void shouldReturn201_WhenCreatedSuccessfully() throws Exception {
-                        UserResponse mockResponse = sampleUserResponse(Role.STUDENT);
-                        when(userService.createUser(any(CreateUserRequest.class)))
-                                        .thenReturn(mockResponse);
-
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "test@example.com",
-                                                            "password": "password123",
-                                                            "fullName": "Test User"
-                                                        }
-                                                        """))
-                                        .andExpect(status().isCreated())
-                                        .andExpect(jsonPath("$.email").value("test@example.com"))
-                                        .andExpect(jsonPath("$.role").value("STUDENT"));
-                }
-
-                // ── Malicious Payloads ──
-
-                @Test
-                @DisplayName("400 - XSS Injection in Email/FullName")
-                void shouldReturn400_WhenXssInFields() throws Exception {
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "<script>alert('xss')</script>@example.com",
-                                                            "password": "password123",
-                                                            "fullName": "<img src=x onerror=alert(1)>"
-                                                        }
-                                                        """))
-                                        .andExpect(status().isBadRequest())
-                                        .andExpect(jsonPath("$.errors.email").exists())
-                                        .andExpect(jsonPath("$.errors.fullName").exists());
-                }
-
-                @Test
-                @DisplayName("400 - Malformed JSON")
-                void shouldReturn400_WhenMalformedJson() throws Exception {
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content("""
-                                                        {
-                                                            "email": "test@example.com",
-                                                            "password": "password123"
-                                                        """))
-                                        .andExpect(status().isBadRequest())
-                                        .andExpect(jsonPath("$.message")
-                                                        .value("Malformed JSON request or invalid data type"));
-                }
-
-                @Test
-                @DisplayName("400 - Buffer Overflow (String > 100 chars)")
-                void shouldReturn400_WhenBufferOverflow() throws Exception {
-                        String longString = "A".repeat(150);
-                        mockMvc.perform(post(URL)
-                                        .contentType(MediaType.APPLICATION_JSON)
-                                        .content(String.format("""
-                                                        {
-                                                            "email": "test@example.com",
-                                                            "password": "password123",
-                                                            "fullName": "%s"
-                                                        }
-                                                        """, longString)))
-                                        .andExpect(status().isBadRequest())
-                                        .andExpect(jsonPath("$.errors.fullName").exists()); // Failed @Size validation
-                }
-
-                @Test
-                @DisplayName("401 - Wrong HTTP Method (GET instead of POST)")
-                void shouldReturn405_WhenWrongMethod() throws Exception {
-                        mockMvc.perform(get(URL))
-                                        .andExpect(status().isUnauthorized()); // Routes to GET /api/users lacking auth
-                                                                               // -> 401
                 }
         }
 

@@ -1,7 +1,5 @@
 package com.example.lms_backend.controller;
 
-import java.util.UUID;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,13 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
-
 import com.example.lms_backend.config.SecurityConfig;
 import com.example.lms_backend.dto.auth.LoginRequest;
+import com.example.lms_backend.dto.auth.RegisterRequest;
 import com.example.lms_backend.exception.GlobalExceptionHandler;
 import com.example.lms_backend.exception.BadCredentialsException;
 import com.example.lms_backend.service.AuthService;
@@ -24,9 +20,7 @@ import com.example.lms_backend.service.AuthService.AuthResult;
 import jakarta.servlet.http.Cookie;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -39,16 +33,6 @@ class AuthControllerTest {
 
     @MockitoBean
     private AuthService authService;
-
-    // ──────────────────────────────────────────────
-    // Mocks: JWT with roles
-    // ──────────────────────────────────────────────
-    private static final UUID USER_ID = UUID.randomUUID();
-
-    private static RequestPostProcessor authJwt() {
-        return jwt().jwt(j -> j.subject(USER_ID.toString()).claim("role", "STUDENT"))
-                .authorities(new SimpleGrantedAuthority("ROLE_STUDENT"));
-    }
 
     private AuthResult sampleAuthResult() {
         return new AuthResult("mock-access-token", "mock-refresh-token");
@@ -167,8 +151,55 @@ class AuthControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(cookie().exists("refresh_token"))
                     .andExpect(cookie().httpOnly("refresh_token", true))
-                    .andExpect(jsonPath("$.accessToken").value("mock-access-token"))
-                    .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                    .andExpect(cookie().exists("access_token"))
+                    .andExpect(cookie().httpOnly("access_token", true));
+        }
+    }
+
+    // ═══════════════════════════════════════════════
+    // 1.5. POST /api/auth/register
+    // ═══════════════════════════════════════════════
+    @Nested
+    @DisplayName("POST /api/auth/register")
+    class Register {
+        private static final String URL = "/api/auth/register";
+
+        private final String VALID_BODY = """
+                {
+                    "email": "test@example.com",
+                    "password": "Password123!",
+                    "fullName": "Test User",
+                    "deviceId": "DEVICE-01",
+                    "deviceName": "My Phone"
+                }
+                """;
+
+        @Test
+        @DisplayName("201 - Successful Registration")
+        void shouldReturn201_WhenRegistrationSuccess() throws Exception {
+            when(authService.register(any(RegisterRequest.class))).thenReturn(sampleAuthResult());
+
+            mockMvc.perform(post(URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(VALID_BODY))
+                    .andExpect(status().isCreated())
+                    .andExpect(cookie().exists("refresh_token"))
+                    .andExpect(cookie().httpOnly("refresh_token", true))
+                    .andExpect(cookie().exists("access_token"))
+                    .andExpect(cookie().httpOnly("access_token", true));
+        }
+
+        @Test
+        @DisplayName("400 - Validation error (Missing fields)")
+        void shouldReturn400_WhenValidationFails() throws Exception {
+            mockMvc.perform(post(URL)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.email").exists())
+                    .andExpect(jsonPath("$.errors.password").exists())
+                    .andExpect(jsonPath("$.errors.fullName").exists())
+                    .andExpect(jsonPath("$.errors.deviceId").exists());
         }
     }
 
@@ -225,8 +256,7 @@ class AuthControllerTest {
                     .cookie(new Cookie(COOKIE_NAME, "valid-refresh-token")))
                     .andExpect(status().isOk())
                     .andExpect(cookie().exists(COOKIE_NAME))
-                    .andExpect(jsonPath("$.accessToken").value("mock-access-token"))
-                    .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                    .andExpect(cookie().exists("access_token"));
         }
     }
 
@@ -237,88 +267,42 @@ class AuthControllerTest {
     @DisplayName("POST /api/auth/logout")
     class Logout {
         private static final String URL = "/api/auth/logout";
-
-        private final String VALID_BODY = """
-                {
-                    "deviceId": "DEVICE-01"
-                }
-                """;
-
-        // ── Security & Malicious Payloads ──
+        private static final String COOKIE_NAME = "refresh_token";
 
         @Test
-        @DisplayName("401 - Unauthenticated request")
-        void shouldReturn401_WhenUnauthenticated() throws Exception {
-            mockMvc.perform(post(URL)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(VALID_BODY))
-                    .andExpect(status().isUnauthorized()); // Requires user context
+        @DisplayName("401 - Wrong HTTP Method (GET instead of POST)")
+        void shouldReturn401_WhenWrongMethod() throws Exception {
+            // GET /api/auth/logout is not explicitly permitted, so it falls under
+            // .anyRequest().authenticated() and gets blocked by Spring Security
+            mockMvc.perform(get(URL))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("400 - XSS Injection in DeviceId")
-        void shouldReturn400_WhenXssInDeviceId() throws Exception {
-            mockMvc.perform(post(URL).with(authJwt())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""
-                            {
-                                "deviceId": "<script>alert(1)</script>"
-                            }
-                            """))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.deviceId").exists());
-        }
-
-        @Test
-        @DisplayName("400 - Buffer Overflow in DeviceId (> 100 chars)")
-        void shouldReturn400_WhenBufferOverflow() throws Exception {
-            String longDeviceId = "A".repeat(150);
-            mockMvc.perform(post(URL).with(authJwt())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(String.format("""
-                            {
-                                "deviceId": "%s"
-                            }
-                            """, longDeviceId)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.deviceId").exists());
-        }
-
-        @Test
-        @DisplayName("400 - Wrong HTTP Method (GET instead of POST)")
-        void shouldReturn405_WhenWrongMethod() throws Exception {
-            // Because AuthController expects auth context but the method is wrong
-            // Without token it could be 401. Let's try it with token.
-            mockMvc.perform(get(URL).with(authJwt())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(VALID_BODY))
-                    .andExpect(status().isMethodNotAllowed()); // Usually springs to 405 because GET doesn't map, and
-                                                               // auth passes.
-        }
-
-        // ── Validation & Business Logic ──
-
-        @Test
-        @DisplayName("400 - Validation error (Missing fields)")
-        void shouldReturn400_WhenValidationFails() throws Exception {
-            mockMvc.perform(post(URL).with(authJwt())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{}"))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errors.deviceId").exists());
-        }
-
-        @Test
-        @DisplayName("204 - Successful Logout")
+        @DisplayName("204 - Successful Logout with refresh token cookie")
         void shouldReturn204_WhenLogoutSuccess() throws Exception {
-            doNothing().when(authService).logout(eq(USER_ID), anyString());
+            doNothing().when(authService).logout(anyString());
 
-            mockMvc.perform(post(URL).with(authJwt())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(VALID_BODY))
+            mockMvc.perform(post(URL)
+                    .cookie(new Cookie(COOKIE_NAME, "valid-refresh-token")))
                     .andExpect(status().isNoContent())
                     .andExpect(cookie().exists("refresh_token"))
-                    .andExpect(cookie().value("refresh_token", "")); // Cookie cleared
+                    .andExpect(cookie().value("refresh_token", ""))
+                    .andExpect(cookie().exists("access_token"))
+                    .andExpect(cookie().value("access_token", ""));
+        }
+
+        @Test
+        @DisplayName("204 - Graceful logout without cookie")
+        void shouldReturn204_WhenNoCookie() throws Exception {
+            mockMvc.perform(post(URL))
+                    .andExpect(status().isNoContent())
+                    .andExpect(cookie().exists("refresh_token"))
+                    .andExpect(cookie().value("refresh_token", ""))
+                    .andExpect(cookie().exists("access_token"))
+                    .andExpect(cookie().value("access_token", ""));
+
+            verify(authService, never()).logout(anyString());
         }
     }
 }

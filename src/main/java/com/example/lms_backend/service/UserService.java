@@ -9,7 +9,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.lms_backend.dto.user.CreateUserRequest;
 import com.example.lms_backend.dto.user.CreateUserWithRoleRequest;
 import com.example.lms_backend.dto.user.UpdateUserRequest;
 import com.example.lms_backend.dto.user.UserResponse;
@@ -28,22 +27,6 @@ public class UserService {
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-    }
-
-    @Transactional
-    public UserResponse createUser(CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new ResourceAlreadyExistsException("Email already exists");
-        }
-        var user = new User();
-        user.setEmail(request.email());
-
-        user.setPassword(passwordEncoder.encode(request.password()));
-
-        user.setFullName(request.fullName());
-        user.setRole(Role.STUDENT);
-        var savedUser = userRepository.save(user);
-        return mapToResponse(savedUser);
     }
 
     @Transactional
