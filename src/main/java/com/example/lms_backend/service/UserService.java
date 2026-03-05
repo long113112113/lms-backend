@@ -2,6 +2,8 @@ package com.example.lms_backend.service;
 
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -21,6 +23,9 @@ import com.example.lms_backend.specification.UserSpecification;
 
 @Service
 public class UserService {
+    // SECURITY: Audit logging added to track administrative actions
+    private static final Logger securityLog = LoggerFactory.getLogger("SECURITY_AUDIT");
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -32,6 +37,7 @@ public class UserService {
     @Transactional
     public UserResponse createUserWithRole(CreateUserWithRoleRequest request) {
         if (userRepository.existsByEmail(request.email())) {
+            securityLog.warn("ADMIN_ACTION action=createUser result=failure reason=email_exists email={}", request.email());
             throw new ResourceAlreadyExistsException("Email already exists");
         }
         var user = new User();
@@ -40,15 +46,20 @@ public class UserService {
         user.setFullName(request.fullName());
         user.setRole(Role.valueOf(request.role()));
         var savedUser = userRepository.save(user);
+        securityLog.info("ADMIN_ACTION action=createUser result=success newUserId={} role={}", savedUser.getId(), savedUser.getRole());
         return mapToResponse(savedUser);
     }
 
     @Transactional
     public UserResponse updateUser(UUID id, UpdateUserRequest request) {
         var user = userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> {
+                    securityLog.warn("ADMIN_ACTION action=updateUser result=failure reason=user_not_found targetUserId={}", id);
+                    return new ResourceNotFoundException("User not found");
+                });
 
         if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            securityLog.warn("ADMIN_ACTION action=updateUser result=failure reason=email_exists targetUserId={}", id);
             throw new ResourceAlreadyExistsException("Email already exists");
         }
 
@@ -61,6 +72,7 @@ public class UserService {
         }
 
         var updatedUser = userRepository.save(user);
+        securityLog.info("ADMIN_ACTION action=updateUser result=success targetUserId={} newRole={}", updatedUser.getId(), updatedUser.getRole());
         return mapToResponse(updatedUser);
     }
 
