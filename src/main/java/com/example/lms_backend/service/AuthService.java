@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -23,6 +25,9 @@ import com.example.lms_backend.repository.UserRepository;
 
 @Service
 public class AuthService {
+    // SECURITY: Audit logging added to track authentication events
+    private static final Logger securityLog = LoggerFactory.getLogger("SECURITY_AUDIT");
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
@@ -45,6 +50,7 @@ public class AuthService {
     @Transactional
     public AuthResult register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.email())) {
+            securityLog.warn("REGISTER_FAILURE email={} reason=email_exists", request.email());
             throw new ResourceAlreadyExistsException("Email already exists");
         }
         var user = new User();
@@ -54,6 +60,8 @@ public class AuthService {
         user.setRole(Role.STUDENT);
         var savedUser = userRepository.save(user);
 
+        securityLog.info("REGISTER_SUCCESS userId={} email={} role={}", savedUser.getId(), savedUser.getEmail(), savedUser.getRole());
+
         RefreshToken refreshToken = createRefreshToken(savedUser, request.deviceId(), request.deviceName());
         String accessToken = generateAccessToken(savedUser);
         return new AuthResult(accessToken, refreshToken.getToken());
@@ -62,8 +70,12 @@ public class AuthService {
     @Transactional
     public AuthResult login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+                .orElseThrow(() -> {
+                    securityLog.warn("LOGIN_FAILURE email={} deviceId={} reason=invalid_credentials", request.email(), request.deviceId());
+                    return new BadCredentialsException("Invalid email or password");
+                });
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            securityLog.warn("LOGIN_FAILURE email={} deviceId={} reason=invalid_credentials", request.email(), request.deviceId());
             throw new BadCredentialsException("Invalid email or password");
         }
         RefreshToken refreshToken = refreshTokenRepository
@@ -77,6 +89,7 @@ public class AuthService {
                 .orElseGet(() -> createRefreshToken(user, request.deviceId(), request.deviceName()));
 
         String accessToken = generateAccessToken(user);
+        securityLog.info("LOGIN_SUCCESS userId={} email={} deviceId={}", user.getId(), user.getEmail(), request.deviceId());
         return new AuthResult(accessToken, refreshToken.getToken());
     }
 
@@ -86,6 +99,7 @@ public class AuthService {
                 .map(token -> {
                     if (token.getExpiryDate().isBefore(Instant.now())) {
                         refreshTokenRepository.delete(token);
+                        securityLog.warn("TOKEN_REFRESH_FAILURE userId={} deviceId={} reason=expired_token", token.getUser().getId(), token.getDeviceId());
                         throw new BadCredentialsException("Token was expired");
                     }
                     token.setToken(UUID.randomUUID().toString());
@@ -93,15 +107,22 @@ public class AuthService {
 
                     User user = token.getUser();
                     String accessToken = generateAccessToken(user);
+                    securityLog.info("TOKEN_REFRESH_SUCCESS userId={} deviceId={}", user.getId(), token.getDeviceId());
                     return new AuthResult(accessToken, token.getToken());
                 })
-                .orElseThrow(() -> new BadCredentialsException("Not valid token"));
+                .orElseThrow(() -> {
+                    securityLog.warn("TOKEN_REFRESH_FAILURE reason=invalid_token");
+                    return new BadCredentialsException("Not valid token");
+                });
     }
 
     @Transactional
     public void logout(String refreshTokenValue) {
         refreshTokenRepository.findByToken(refreshTokenValue)
-                .ifPresent(refreshTokenRepository::delete);
+                .ifPresent(token -> {
+                    securityLog.info("LOGOUT_SUCCESS userId={} deviceId={}", token.getUser().getId(), token.getDeviceId());
+                    refreshTokenRepository.delete(token);
+                });
     }
 
     private String generateAccessToken(User user) {
