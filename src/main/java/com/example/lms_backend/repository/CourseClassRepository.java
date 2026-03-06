@@ -1,5 +1,6 @@
 package com.example.lms_backend.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,6 +25,9 @@ public interface CourseClassRepository extends JpaRepository<CourseClass, UUID>,
 
     @EntityGraph(attributePaths = { "course", "teacher" })
     Page<CourseClass> findByTeacherId(UUID teacherId, Pageable pageable);
+
+    @EntityGraph(attributePaths = { "course" })
+    List<CourseClass> findAllByTeacherId(UUID teacherId);
 
     @EntityGraph(attributePaths = { "course", "teacher" })
     @Query("SELECT cc FROM CourseClass cc JOIN Enrollment e ON e.courseClass = cc "
