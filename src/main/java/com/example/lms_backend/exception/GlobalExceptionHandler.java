@@ -81,7 +81,8 @@ public class GlobalExceptionHandler {
         @ExceptionHandler(org.springframework.web.bind.MissingRequestCookieException.class)
         public ResponseEntity<Map<String, Object>> handleMissingCookie(
                         org.springframework.web.bind.MissingRequestCookieException ex) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                // SECURITY: Return 401 instead of 400 for missing cookies to prevent unauthenticated access leaking info or acting as a bad request
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
                                 "message", ex.getMessage(),
                                 "timestamp", Instant.now().toString()));
         }

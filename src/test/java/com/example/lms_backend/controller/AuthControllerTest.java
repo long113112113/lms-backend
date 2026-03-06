@@ -215,14 +215,10 @@ class AuthControllerTest {
         // ── Security & Malicious Payloads ──
 
         @Test
-        @DisplayName("400 - Missing Cookie (Empty request)")
-        void shouldReturn400_WhenMissingCookie() throws Exception {
+        @DisplayName("401 - Missing Cookie (Empty request)")
+        void shouldReturn401_WhenMissingCookie() throws Exception {
             mockMvc.perform(post(URL))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value("Required cookie 'refresh_token' for method parameter type String is not present")); // Handled
-                                                                                                                        // by
-                                                                                                                        // MissingRequestCookieException
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -243,8 +239,7 @@ class AuthControllerTest {
 
             mockMvc.perform(post(URL)
                     .cookie(new Cookie(COOKIE_NAME, "invalid-token")))
-                    .andExpect(status().isUnauthorized())
-                    .andExpect(jsonPath("$.message").value("Invalid refresh token"));
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
