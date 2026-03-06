@@ -72,7 +72,12 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()// TODO: DEV only!
                         .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated())
-                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin())) // TODO: DEV only!
+                // SECURITY: Strict response headers mitigate clickjacking, MIME-type sniffing, and cross-site scripting (XSS).
+                .headers(headers -> headers
+                        .contentTypeOptions(org.springframework.security.config.Customizer.withDefaults())
+                        .frameOptions(frame -> frame.deny())
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
+                        .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'none'; object-src 'none'")))
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(bearerTokenResolver())
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
