@@ -16,6 +16,8 @@ import com.example.lms_backend.entity.CourseClass;
 public interface CourseClassRepository extends JpaRepository<CourseClass, UUID>, JpaSpecificationExecutor<CourseClass> {
     boolean existsByCode(String code);
 
+    Optional<CourseClass> findByCode(String code);
+
     boolean existsByJoinCode(String joinCode);
 
     Optional<CourseClass> findByJoinCodeAndIsDeletedFalse(String joinCode);
