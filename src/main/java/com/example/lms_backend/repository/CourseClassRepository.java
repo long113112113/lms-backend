@@ -27,6 +27,9 @@ public interface CourseClassRepository extends JpaRepository<CourseClass, UUID>,
     Optional<CourseClass> findByJoinCodeAndIsDeletedFalse(String joinCode);
 
     @EntityGraph(attributePaths = { "course", "teacher" })
+    Optional<CourseClass> findByIdAndIsDeletedFalse(UUID id);
+
+    @EntityGraph(attributePaths = { "course", "teacher" })
     Page<CourseClass> findAll(Specification<CourseClass> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = { "course", "teacher" })

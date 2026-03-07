@@ -12,6 +12,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.validation.ConstraintViolationException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -46,6 +48,20 @@ public class GlobalExceptionHandler {
                                                 fieldError -> fieldError.getDefaultMessage() != null
                                                                 ? fieldError.getDefaultMessage()
                                                                 : "Invalid value",
+                                                (existing, replacement) -> existing));
+
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                                "message", "Validation failed",
+                                "errors", errors,
+                                "timestamp", Instant.now().toString()));
+        }
+
+        @ExceptionHandler(ConstraintViolationException.class)
+        public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+                var errors = ex.getConstraintViolations().stream()
+                                .collect(Collectors.toMap(
+                                                violation -> extractConstraintField(violation.getPropertyPath().toString()),
+                                                violation -> violation.getMessage(),
                                                 (existing, replacement) -> existing));
 
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -118,5 +134,13 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                                 "message", "An unexpected error occurred",
                                 "timestamp", Instant.now().toString()));
+        }
+
+        private String extractConstraintField(String propertyPath) {
+                int lastDotIndex = propertyPath.lastIndexOf('.');
+                if (lastDotIndex >= 0 && lastDotIndex < propertyPath.length() - 1) {
+                        return propertyPath.substring(lastDotIndex + 1);
+                }
+                return propertyPath;
         }
 }

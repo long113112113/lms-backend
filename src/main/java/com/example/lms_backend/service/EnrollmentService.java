@@ -1,8 +1,13 @@
 package com.example.lms_backend.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +23,19 @@ import com.example.lms_backend.exception.ResourceNotFoundException;
 import com.example.lms_backend.repository.CourseClassRepository;
 import com.example.lms_backend.repository.EnrollmentRepository;
 import com.example.lms_backend.repository.UserRepository;
+import com.example.lms_backend.specification.EnrollmentSpecification;
 
 @Service
 public class EnrollmentService {
+    private static final List<String> ALLOWED_CLASS_STUDENT_SORT_FIELDS = List.of(
+            "createdAt",
+            "studentName",
+            "studentEmail");
+    private static final Sort DEFAULT_CLASS_STUDENT_SORT = Sort.by(Sort.Order.desc("createdAt"));
+    private static final Map<String, String> CLASS_STUDENT_SORT_FIELDS = Map.of(
+            "createdAt", "createdAt",
+            "studentName", "student.fullName",
+            "studentEmail", "student.email");
 
     private final EnrollmentRepository enrollmentRepository;
     private final CourseClassRepository courseClassRepository;
@@ -84,7 +99,7 @@ public class EnrollmentService {
 
     @Transactional
     public void kickStudent(UUID teacherId, UUID courseClassId, UUID studentId) {
-        CourseClass courseClass = courseClassRepository.findById(courseClassId)
+        CourseClass courseClass = courseClassRepository.findByIdAndIsDeletedFalse(courseClassId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         if (courseClass.getTeacher() == null || !courseClass.getTeacher().getId().equals(teacherId)) {
@@ -104,8 +119,9 @@ public class EnrollmentService {
     }
 
     @Transactional(readOnly = true)
-    public List<EnrollmentResponse> getClassStudents(UUID courseClassId, UUID callerId, String role) {
-        CourseClass courseClass = courseClassRepository.findById(courseClassId)
+    public Page<EnrollmentResponse> getClassStudents(UUID courseClassId, UUID callerId, String role, String q,
+            Pageable pageable) {
+        CourseClass courseClass = courseClassRepository.findByIdAndIsDeletedFalse(courseClassId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         if (!"ADMIN".equals(role)) {
@@ -114,9 +130,10 @@ public class EnrollmentService {
             }
         }
 
-        List<Enrollment> enrollments = enrollmentRepository
-                .findByCourseClassIdAndStatus(courseClassId, EnrollmentStatus.ACTIVE);
-        return enrollments.stream().map(this::mapToResponse).toList();
+        Pageable sanitizedPageable = sanitizeClassStudentsPageable(pageable);
+        return enrollmentRepository
+                .findAll(EnrollmentSpecification.buildForClassStudents(courseClassId, q), sanitizedPageable)
+                .map(this::mapToResponse);
     }
 
     @Transactional(readOnly = true)
@@ -140,5 +157,23 @@ public class EnrollmentService {
                 course.getName(),
                 enrollment.getStatus().name(),
                 enrollment.getCreatedAt());
+    }
+
+    private Pageable sanitizeClassStudentsPageable(Pageable pageable) {
+        Sort requestedSort = pageable.getSort().isSorted() ? pageable.getSort() : DEFAULT_CLASS_STUDENT_SORT;
+        List<Sort.Order> translatedOrders = requestedSort.stream()
+                .map(this::translateClassStudentSortOrder)
+                .toList();
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(translatedOrders));
+    }
+
+    private Sort.Order translateClassStudentSortOrder(Sort.Order order) {
+        String mappedProperty = CLASS_STUDENT_SORT_FIELDS.get(order.getProperty());
+        if (mappedProperty == null) {
+            throw new IllegalArgumentException(
+                    "Unsupported sort field: %s. Allowed values: %s"
+                            .formatted(order.getProperty(), String.join(", ", ALLOWED_CLASS_STUDENT_SORT_FIELDS)));
+        }
+        return order.withProperty(mappedProperty);
     }
 }

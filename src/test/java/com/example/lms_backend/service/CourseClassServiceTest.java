@@ -64,7 +64,7 @@ class CourseClassServiceTest {
     @DisplayName("ADMIN can view any class detail")
     void shouldAllowAdminToViewAnyClass() {
         var courseClass = sampleCourseClass(TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
 
         var response = courseClassService.getCourseClassById(ADMIN_ID, "ADMIN", CLASS_ID);
 
@@ -78,7 +78,7 @@ class CourseClassServiceTest {
     @DisplayName("TEACHER can view own class detail")
     void shouldAllowTeacherToViewOwnClass() {
         var courseClass = sampleCourseClass(TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
 
         var response = courseClassService.getCourseClassById(TEACHER_ID, "TEACHER", CLASS_ID);
 
@@ -90,7 +90,7 @@ class CourseClassServiceTest {
     @DisplayName("TEACHER cannot view another teacher's class")
     void shouldRejectTeacherForForeignClass() {
         var courseClass = sampleCourseClass(OTHER_TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
 
         var exception = assertThrows(
                 AccessDeniedException.class,
@@ -105,7 +105,7 @@ class CourseClassServiceTest {
     @DisplayName("STUDENT can view enrolled class detail")
     void shouldAllowStudentWithActiveEnrollment() {
         var courseClass = sampleCourseClass(TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
         when(enrollmentRepository.existsByStudentIdAndCourseClassIdAndStatus(
                 STUDENT_ID, CLASS_ID, EnrollmentStatus.ACTIVE)).thenReturn(true);
 
@@ -119,7 +119,7 @@ class CourseClassServiceTest {
     @DisplayName("STUDENT cannot view class without active enrollment")
     void shouldRejectStudentWithoutActiveEnrollment() {
         var courseClass = sampleCourseClass(TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
         when(enrollmentRepository.existsByStudentIdAndCourseClassIdAndStatus(
                 STUDENT_ID, CLASS_ID, EnrollmentStatus.ACTIVE)).thenReturn(false);
 
@@ -133,7 +133,7 @@ class CourseClassServiceTest {
     @Test
     @DisplayName("Should return 404 when class does not exist")
     void shouldThrowWhenClassNotFound() {
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.empty());
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.empty());
 
         var exception = assertThrows(
                 ResourceNotFoundException.class,
@@ -146,7 +146,7 @@ class CourseClassServiceTest {
     @DisplayName("Should reject unknown role")
     void shouldRejectUnknownRole() {
         var courseClass = sampleCourseClass(TEACHER_ID);
-        when(courseClassRepository.findById(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
+        when(courseClassRepository.findByIdAndIsDeletedFalse(CLASS_ID)).thenReturn(java.util.Optional.of(courseClass));
 
         var exception = assertThrows(
                 AccessDeniedException.class,

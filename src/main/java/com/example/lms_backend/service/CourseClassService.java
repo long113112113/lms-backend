@@ -72,7 +72,7 @@ public class CourseClassService {
 
     @Transactional
     public CourseClassResponse resetJoinCode(UUID teacherId, UUID courseClassId) {
-        var courseClass = courseClassRepository.findById(courseClassId)
+        var courseClass = courseClassRepository.findByIdAndIsDeletedFalse(courseClassId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         if (courseClass.getTeacher() == null || !courseClass.getTeacher().getId().equals(teacherId)) {
@@ -86,7 +86,7 @@ public class CourseClassService {
 
     @Transactional(readOnly = true)
     public CourseClassResponse getCourseClassById(UUID userId, String role, UUID courseClassId) {
-        var courseClass = courseClassRepository.findById(courseClassId)
+        var courseClass = courseClassRepository.findByIdAndIsDeletedFalse(courseClassId)
                 .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         switch (role) {

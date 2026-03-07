@@ -7,9 +7,13 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -27,6 +31,7 @@ import com.example.lms_backend.service.EnrollmentService;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -532,7 +537,8 @@ class EnrollmentControllerTest {
         @Test
         @DisplayName("404 - Class not found")
         void shouldReturn404_WhenClassNotFound() throws Exception {
-            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN")))
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN"), isNull(),
+                    any(Pageable.class)))
                     .thenThrow(new ResourceNotFoundException("Class not found"));
 
             mockMvc.perform(get(url())
@@ -544,7 +550,8 @@ class EnrollmentControllerTest {
         @Test
         @DisplayName("403 - Teacher does not own this class")
         void shouldReturn403_WhenTeacherDoesNotOwnClass() throws Exception {
-            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("TEACHER")))
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("TEACHER"), isNull(),
+                    any(Pageable.class)))
                     .thenThrow(new AccessDeniedException("You are not the teacher of this class"));
 
             mockMvc.perform(get(url())
@@ -555,28 +562,96 @@ class EnrollmentControllerTest {
 
         @Test
         @DisplayName("200 - ADMIN views class with no students")
-        void shouldReturn200WithEmptyList_WhenAdminViewsEmptyClass() throws Exception {
-            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN")))
-                    .thenReturn(List.of());
+        void shouldReturn200WithEmptyPage_WhenAdminViewsEmptyClass() throws Exception {
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN"), isNull(),
+                    any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(get(url())
+                    .param("page", "0")
+                    .param("size", "10")
                     .with(adminJwt()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(0)));
+                    .andExpect(jsonPath("$.content", hasSize(0)))
+                    .andExpect(jsonPath("$.totalElements").value(0))
+                    .andExpect(jsonPath("$.totalPages").value(0));
         }
 
         @Test
         @DisplayName("200 - TEACHER views class with enrolled students")
-        void shouldReturn200WithData_WhenTeacherOwnsClass() throws Exception {
-            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("TEACHER")))
-                    .thenReturn(List.of(sampleResponse()));
+        void shouldReturn200WithPageMetadata_WhenTeacherOwnsClass() throws Exception {
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("TEACHER"), eq("nguyen"),
+                    any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(sampleResponse()), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get(url())
+                    .param("page", "0")
+                    .param("size", "10")
+                    .param("q", "nguyen")
                     .with(teacherJwt()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].studentEmail").value("student@example.com"))
-                    .andExpect(jsonPath("$[0].status").value("ACTIVE"));
+                    .andExpect(jsonPath("$.content", hasSize(1)))
+                    .andExpect(jsonPath("$.content[0].studentEmail").value("student@example.com"))
+                    .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+                    .andExpect(jsonPath("$.totalElements").value(1))
+                    .andExpect(jsonPath("$.totalPages").value(1));
+        }
+
+        @Test
+        @DisplayName("400 - Invalid search query from XSS payload")
+        void shouldReturn400_WhenSearchQueryContainsUnsafeHtml() throws Exception {
+            mockMvc.perform(get(url())
+                    .param("q", "<script>alert('xss')</script>")
+                    .with(adminJwt()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.q").exists());
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Search query exceeds max length")
+        void shouldReturn400_WhenSearchQueryTooLong() throws Exception {
+            mockMvc.perform(get(url())
+                    .param("q", "A".repeat(101))
+                    .with(adminJwt()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.q").value("Search query must not exceed 100 characters"));
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Unsupported sort field")
+        void shouldReturn400_WhenSortFieldIsUnsupported() throws Exception {
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN"), isNull(),
+                    any(Pageable.class)))
+                    .thenThrow(new IllegalArgumentException("Unsupported sort field: hacked"));
+
+            mockMvc.perform(get(url())
+                    .param("sort", "hacked,asc")
+                    .with(adminJwt()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").value("Unsupported sort field: hacked"));
+        }
+
+        @Test
+        @DisplayName("200 - Controller caps page size at 100")
+        void shouldCapPageSizeAt100() throws Exception {
+            when(enrollmentService.getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN"), isNull(),
+                    any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 100), 0));
+
+            mockMvc.perform(get(url())
+                    .param("page", "0")
+                    .param("size", "500")
+                    .with(adminJwt()))
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+            verify(enrollmentService).getClassStudents(eq(CLASS_ID), any(UUID.class), eq("ADMIN"), isNull(),
+                    pageableCaptor.capture());
+            org.junit.jupiter.api.Assertions.assertEquals(100, pageableCaptor.getValue().getPageSize());
         }
     }
 }

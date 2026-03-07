@@ -4,14 +4,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.example.lms_backend.entity.Enrollment;
 import com.example.lms_backend.entity.enums.EnrollmentStatus;
 
-public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
+public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID>, JpaSpecificationExecutor<Enrollment> {
+
+    @Override
+    @EntityGraph(attributePaths = { "student", "courseClass", "courseClass.course" })
+    Page<Enrollment> findAll(Specification<Enrollment> spec, Pageable pageable);
 
     Optional<Enrollment> findByStudentIdAndCourseClassId(UUID studentId, UUID courseClassId);
 
