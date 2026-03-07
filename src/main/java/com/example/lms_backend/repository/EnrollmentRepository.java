@@ -23,6 +23,8 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     boolean existsByStudentIdAndCourseClassId(UUID studentId, UUID courseClassId);
 
+    boolean existsByStudentIdAndCourseClassIdAndStatus(UUID studentId, UUID courseClassId, EnrollmentStatus status);
+
     @Query("SELECT e.courseClass.id, COUNT(e) FROM Enrollment e WHERE e.courseClass.id IN :classIds AND e.status = com.example.lms_backend.entity.enums.EnrollmentStatus.ACTIVE GROUP BY e.courseClass.id")
     List<Object[]> countActiveStudentsByClassIds(@Param("classIds") List<UUID> classIds);
 }

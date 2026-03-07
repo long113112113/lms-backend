@@ -53,6 +53,15 @@ public class CourseClassController {
                 teacherName, pageable));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CourseClassResponse> getCourseClassById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        String role = jwt.getClaimAsString("role");
+        return ResponseEntity.ok(courseClassService.getCourseClassById(userId, role, id));
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<CourseClassResponse> createCourseClass(

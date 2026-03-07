@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -20,7 +21,13 @@ public interface CourseClassRepository extends JpaRepository<CourseClass, UUID>,
 
     boolean existsByJoinCode(String joinCode);
 
+    @EntityGraph(attributePaths = { "course", "teacher" })
+    Optional<CourseClass> findById(UUID id);
+
     Optional<CourseClass> findByJoinCodeAndIsDeletedFalse(String joinCode);
+
+    @EntityGraph(attributePaths = { "course", "teacher" })
+    Page<CourseClass> findAll(Specification<CourseClass> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = { "course", "teacher" })
     Page<CourseClass> findAllBy(Pageable pageable);

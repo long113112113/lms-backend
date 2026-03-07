@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import com.example.lms_backend.config.SecurityConfig;
 import com.example.lms_backend.dto.course.CourseClassResponse;
 import com.example.lms_backend.dto.course.CreateCourseClassRequest;
+import com.example.lms_backend.exception.AccessDeniedException;
 import com.example.lms_backend.exception.GlobalExceptionHandler;
 import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.exception.ResourceNotFoundException;
@@ -149,6 +150,103 @@ class CourseClassControllerTest {
     // ═══════════════════════════════════════════════
     // 2. POST /api/course-classes
     // ═══════════════════════════════════════════════
+    @Nested
+    @DisplayName("GET /api/course-classes/{id}")
+    class GetCourseClassById {
+        private String url() {
+            return "/api/course-classes/" + CLASS_ID;
+        }
+
+        @Test
+        @DisplayName("401 - Unauthenticated request")
+        void shouldReturn401_WhenUnauthenticated() throws Exception {
+            mockMvc.perform(get(url()))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("400 - Type Mismatch (Invalid UUID format)")
+        void shouldReturn400_WhenIdHasInvalidFormat() throws Exception {
+            mockMvc.perform(get("/api/course-classes/invalid-uuid").with(adminJwt()))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.message").exists());
+        }
+
+        @Test
+        @DisplayName("405 - Wrong HTTP Method (DELETE instead of GET)")
+        void shouldReturn405_WhenWrongMethod() throws Exception {
+            mockMvc.perform(delete(url()).with(adminJwt()))
+                    .andExpect(status().isMethodNotAllowed());
+        }
+
+        @Test
+        @DisplayName("200 - STUDENT views class detail successfully")
+        void shouldReturn200_WhenStudentCanAccess() throws Exception {
+            when(courseClassService.getCourseClassById(eq(STUDENT_ID), eq("STUDENT"), eq(CLASS_ID)))
+                    .thenReturn(sampleClassResponse());
+
+            mockMvc.perform(get(url()).with(studentJwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(CLASS_ID.toString()))
+                    .andExpect(jsonPath("$.code").value("CLASS-01"));
+        }
+
+        @Test
+        @DisplayName("200 - TEACHER views own class detail successfully")
+        void shouldReturn200_WhenTeacherCanAccess() throws Exception {
+            when(courseClassService.getCourseClassById(eq(TEACHER_ID), eq("TEACHER"), eq(CLASS_ID)))
+                    .thenReturn(sampleClassResponse());
+
+            mockMvc.perform(get(url()).with(teacherJwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.teacherId").value(TEACHER_ID.toString()));
+        }
+
+        @Test
+        @DisplayName("200 - ADMIN views class detail successfully")
+        void shouldReturn200_WhenAdminCanAccess() throws Exception {
+            when(courseClassService.getCourseClassById(any(UUID.class), eq("ADMIN"), eq(CLASS_ID)))
+                    .thenReturn(sampleClassResponse());
+
+            mockMvc.perform(get(url()).with(adminJwt()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.courseId").value(COURSE_ID.toString()));
+        }
+
+        @Test
+        @DisplayName("403 - STUDENT cannot view class when not enrolled")
+        void shouldReturn403_WhenStudentCannotAccess() throws Exception {
+            when(courseClassService.getCourseClassById(eq(STUDENT_ID), eq("STUDENT"), eq(CLASS_ID)))
+                    .thenThrow(new AccessDeniedException("You are not enrolled in this class"));
+
+            mockMvc.perform(get(url()).with(studentJwt()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("You are not enrolled in this class"));
+        }
+
+        @Test
+        @DisplayName("403 - TEACHER cannot view another teacher's class")
+        void shouldReturn403_WhenTeacherCannotAccess() throws Exception {
+            when(courseClassService.getCourseClassById(eq(TEACHER_ID), eq("TEACHER"), eq(CLASS_ID)))
+                    .thenThrow(new AccessDeniedException("You are not the teacher of this class"));
+
+            mockMvc.perform(get(url()).with(teacherJwt()))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.message").value("You are not the teacher of this class"));
+        }
+
+        @Test
+        @DisplayName("404 - Class not found")
+        void shouldReturn404_WhenClassNotFound() throws Exception {
+            when(courseClassService.getCourseClassById(any(UUID.class), any(String.class), eq(CLASS_ID)))
+                    .thenThrow(new ResourceNotFoundException("Class not found"));
+
+            mockMvc.perform(get(url()).with(adminJwt()))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.message").value("Class not found"));
+        }
+    }
+
     @Nested
     @DisplayName("POST /api/course-classes")
     class CreateCourseClass {

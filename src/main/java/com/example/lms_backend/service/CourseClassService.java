@@ -12,12 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.lms_backend.dto.course.CourseClassResponse;
 import com.example.lms_backend.dto.course.CreateCourseClassRequest;
 import com.example.lms_backend.entity.CourseClass;
+import com.example.lms_backend.entity.enums.EnrollmentStatus;
 import com.example.lms_backend.entity.enums.Role;
 import com.example.lms_backend.exception.AccessDeniedException;
 import com.example.lms_backend.exception.ResourceAlreadyExistsException;
 import com.example.lms_backend.exception.ResourceNotFoundException;
 import com.example.lms_backend.repository.CourseClassRepository;
 import com.example.lms_backend.repository.CourseRepository;
+import com.example.lms_backend.repository.EnrollmentRepository;
 import com.example.lms_backend.repository.UserRepository;
 import com.example.lms_backend.specification.CourseClassSpecification;
 
@@ -29,12 +31,14 @@ public class CourseClassService {
 
     private final CourseClassRepository courseClassRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
 
     public CourseClassService(CourseClassRepository courseClassRepository, CourseRepository courseRepository,
-            UserRepository userRepository) {
+            EnrollmentRepository enrollmentRepository, UserRepository userRepository) {
         this.courseClassRepository = courseClassRepository;
         this.courseRepository = courseRepository;
+        this.enrollmentRepository = enrollmentRepository;
         this.userRepository = userRepository;
     }
 
@@ -78,6 +82,32 @@ public class CourseClassService {
         courseClass.setJoinCode(generateJoinCode());
         var saved = courseClassRepository.save(courseClass);
         return mapToResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public CourseClassResponse getCourseClassById(UUID userId, String role, UUID courseClassId) {
+        var courseClass = courseClassRepository.findById(courseClassId)
+                .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
+
+        switch (role) {
+            case "ADMIN" -> {
+            }
+            case "TEACHER" -> {
+                if (courseClass.getTeacher() == null || !courseClass.getTeacher().getId().equals(userId)) {
+                    throw new AccessDeniedException("You are not the teacher of this class");
+                }
+            }
+            case "STUDENT" -> {
+                boolean hasActiveEnrollment = enrollmentRepository.existsByStudentIdAndCourseClassIdAndStatus(
+                        userId, courseClassId, EnrollmentStatus.ACTIVE);
+                if (!hasActiveEnrollment) {
+                    throw new AccessDeniedException("You are not enrolled in this class");
+                }
+            }
+            default -> throw new AccessDeniedException("Unknown role: " + role);
+        }
+
+        return mapToResponse(courseClass);
     }
 
     @Transactional(readOnly = true)
