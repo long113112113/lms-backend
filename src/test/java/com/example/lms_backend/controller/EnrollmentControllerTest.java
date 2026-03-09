@@ -140,6 +140,38 @@ class EnrollmentControllerTest {
                             """))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.joinCode").exists());
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Join code is missing")
+        void shouldReturn400_WhenJoinCodeIsMissing() throws Exception {
+            mockMvc.perform(post(URL)
+                    .with(studentJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            { }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.joinCode").value("Join code is required"));
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Join code is null")
+        void shouldReturn400_WhenJoinCodeIsNull() throws Exception {
+            mockMvc.perform(post(URL)
+                    .with(studentJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            { "joinCode": null }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.joinCode").value("Join code is required"));
+
+            verifyNoInteractions(enrollmentService);
         }
 
         @Test
@@ -166,6 +198,40 @@ class EnrollmentControllerTest {
                             """))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errors.joinCode").exists());
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Join code has invalid format")
+        void shouldReturn400_WhenJoinCodeHasInvalidFormat() throws Exception {
+            mockMvc.perform(post(URL)
+                    .with(studentJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            { "joinCode": "abc1234" }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.joinCode")
+                            .value("Join code must be exactly 7 uppercase letters or digits"));
+
+            verifyNoInteractions(enrollmentService);
+        }
+
+        @Test
+        @DisplayName("400 - Join code has invalid length")
+        void shouldReturn400_WhenJoinCodeHasInvalidLength() throws Exception {
+            mockMvc.perform(post(URL)
+                    .with(studentJwt())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            { "joinCode": "ABC12345" }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.joinCode")
+                            .value("Join code must be exactly 7 uppercase letters or digits"));
+
+            verifyNoInteractions(enrollmentService);
         }
 
         @Test
@@ -179,14 +245,9 @@ class EnrollmentControllerTest {
         }
 
         @Test
-        @DisplayName("400/201 - Buffer Overflow (Extremely long join code)")
-        void shouldReturn201Or400_WhenJoinCodeIsTooLong() throws Exception {
+        @DisplayName("400 - Buffer Overflow (Extremely long join code)")
+        void shouldReturn400_WhenJoinCodeIsTooLong() throws Exception {
             String longString = "A".repeat(10000);
-
-            // Depending on if we have @Size on joinCode, it might pass or fail.
-            // Let's assume it passes @SafeHtml and @NotBlank right now, hitting service.
-            when(enrollmentService.joinClass(any(UUID.class), eq(longString)))
-                    .thenThrow(new ResourceNotFoundException("Invalid join code"));
 
             mockMvc.perform(post(URL)
                     .with(studentJwt())
@@ -194,9 +255,11 @@ class EnrollmentControllerTest {
                     .content(String.format("""
                             { "joinCode": "%s" }
                             """, longString)))
-                    // If JoinClassRequest misses @Size, it will go to service and return 404.
-                    // If it has @Size, it returns 400.
-                    .andExpect(status().is4xxClientError());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors.joinCode")
+                            .value("Join code must be exactly 7 uppercase letters or digits"));
+
+            verifyNoInteractions(enrollmentService);
         }
 
         // ── Business Logic ──
