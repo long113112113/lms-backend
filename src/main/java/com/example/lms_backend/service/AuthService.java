@@ -31,6 +31,9 @@ public class AuthService {
     private static final long REFRESH_TOKEN_VALIDITY_DAYS = 7;
     private static final long ACCESS_TOKEN_VALIDITY_MINUTES = 15;
 
+    // SECURITY: Dummy encoded password used to mitigate timing attacks during login
+    private final String dummyEncodedPassword;
+
     public record AuthResult(String accessToken, String refreshToken) {
     }
 
@@ -40,6 +43,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.dummyEncodedPassword = this.passwordEncoder.encode("dummyPasswordForTimingAttackMitigation");
     }
 
     @Transactional
@@ -61,9 +65,17 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        // SECURITY: Perform constant-time check to prevent user enumeration timing attacks
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        boolean passwordMatches = false;
+        if (user != null) {
+            passwordMatches = passwordEncoder.matches(request.password(), user.getPassword());
+        } else {
+            // Perform fake match to ensure timing is consistent
+            passwordEncoder.matches(request.password(), dummyEncodedPassword);
+        }
+
+        if (user == null || !passwordMatches) {
             throw new BadCredentialsException("Invalid email or password");
         }
         RefreshToken refreshToken = refreshTokenRepository
