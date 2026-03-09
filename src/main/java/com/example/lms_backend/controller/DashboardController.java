@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.lms_backend.dto.dashboard.StudentDashboardResponse;
 import com.example.lms_backend.dto.dashboard.TeacherDashboardResponse;
 import com.example.lms_backend.service.DashboardService;
 
@@ -29,5 +30,13 @@ public class DashboardController {
             @AuthenticationPrincipal Jwt jwt) {
         UUID teacherId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(dashboardService.getTeacherDashboard(teacherId));
+    }
+
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/student")
+    public ResponseEntity<StudentDashboardResponse> getStudentDashboard(
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID studentId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(dashboardService.getStudentDashboard(studentId));
     }
 }

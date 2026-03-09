@@ -36,4 +36,17 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID>, J
 
     @Query("SELECT e.courseClass.id, COUNT(e) FROM Enrollment e WHERE e.courseClass.id IN :classIds AND e.status = com.example.lms_backend.entity.enums.EnrollmentStatus.ACTIVE GROUP BY e.courseClass.id")
     List<Object[]> countActiveStudentsByClassIds(@Param("classIds") List<UUID> classIds);
+
+    @Query("""
+            SELECT e FROM Enrollment e
+            JOIN FETCH e.courseClass cc
+            JOIN FETCH cc.course
+            LEFT JOIN FETCH cc.teacher
+            WHERE e.student.id = :studentId
+              AND e.status IN :statuses
+            ORDER BY e.createdAt DESC
+            """)
+    List<Enrollment> findDashboardEnrollmentsByStudentIdAndStatuses(
+            @Param("studentId") UUID studentId,
+            @Param("statuses") List<EnrollmentStatus> statuses);
 }

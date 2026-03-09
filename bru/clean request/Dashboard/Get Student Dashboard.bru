@@ -1,0 +1,15 @@
+meta {
+  name: Get Student Dashboard
+  type: http
+  seq: 18
+}
+
+get {
+  url: http://localhost:8080/api/dashboard/student
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{access_token}}
+}

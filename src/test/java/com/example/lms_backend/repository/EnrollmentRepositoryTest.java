@@ -156,6 +156,40 @@ class EnrollmentRepositoryTest {
         assertEquals(2, whitespaceQuery.getTotalElements());
     }
 
+    @Test
+    @DisplayName("findDashboardEnrollmentsByStudentIdAndStatuses preloads class graph, filters statuses, and sorts newest first")
+    void shouldLoadStudentDashboardEnrollmentsWithCourseAndTeacherGraph() throws InterruptedException {
+        UUID studentId = seedStudentDashboardData();
+
+        entityManager.flush();
+        entityManager.clear();
+        statistics.clear();
+
+        var enrollments = enrollmentRepository.findDashboardEnrollmentsByStudentIdAndStatuses(
+                studentId,
+                List.of(EnrollmentStatus.ACTIVE, EnrollmentStatus.COMPLETED));
+
+        assertEquals(3, enrollments.size());
+        assertEquals(EnrollmentStatus.ACTIVE, enrollments.get(0).getStatus());
+        assertEquals(EnrollmentStatus.ACTIVE, enrollments.get(1).getStatus());
+        assertEquals(EnrollmentStatus.COMPLETED, enrollments.get(2).getStatus());
+
+        long statementsBeforeAccess = statistics.getPrepareStatementCount();
+
+        for (var enrollment : enrollments) {
+            assertTrue(Persistence.getPersistenceUtil().isLoaded(enrollment, "courseClass"));
+            assertTrue(Persistence.getPersistenceUtil().isLoaded(enrollment.getCourseClass(), "course"));
+            assertTrue(Persistence.getPersistenceUtil().isLoaded(enrollment.getCourseClass(), "teacher"));
+
+            enrollment.getCourseClass().getCode();
+            enrollment.getCourseClass().getCourse().getName();
+            enrollment.getCourseClass().getTeacher().getFullName();
+        }
+
+        long statementsAfterAccess = statistics.getPrepareStatementCount();
+        assertEquals(statementsBeforeAccess, statementsAfterAccess);
+    }
+
     private SearchSeedData seedClassStudentSearchData() {
         var teacher = createTeacher("teacher-search@lms.com", "Teacher Search");
         userRepository.save(teacher);
@@ -209,6 +243,43 @@ class EnrollmentRepositoryTest {
                 createEnrollment(wildcardPercentCandidate, targetClass, EnrollmentStatus.ACTIVE)));
 
         return targetClass.getId();
+    }
+
+    private UUID seedStudentDashboardData() throws InterruptedException {
+        var teacher = createTeacher("teacher-dashboard@lms.com", "Teacher Dashboard");
+        userRepository.save(teacher);
+
+        var targetStudent = createStudent("student-dashboard@lms.com", "Student Dashboard");
+        var otherStudent = createStudent("student-other@lms.com", "Other Student");
+        userRepository.saveAll(List.of(targetStudent, otherStudent));
+
+        var course = createCourse("CS401", "Distributed Systems");
+        courseRepository.save(course);
+
+        var oldestCompletedClass = createCourseClass(course, teacher, "CS401-01", "ABC4010");
+        var olderActiveClass = createCourseClass(course, teacher, "CS401-02", "ABC4011");
+        var newestActiveClass = createCourseClass(course, teacher, "CS401-03", "ABC4012");
+        var ignoredStatusClass = createCourseClass(course, teacher, "CS401-04", "ABC4013");
+        var otherStudentClass = createCourseClass(course, teacher, "CS401-05", "ABC4014");
+        courseClassRepository.saveAll(List.of(
+                oldestCompletedClass,
+                olderActiveClass,
+                newestActiveClass,
+                ignoredStatusClass,
+                otherStudentClass));
+
+        saveEnrollmentWithDelay(createEnrollment(targetStudent, oldestCompletedClass, EnrollmentStatus.COMPLETED));
+        saveEnrollmentWithDelay(createEnrollment(targetStudent, olderActiveClass, EnrollmentStatus.ACTIVE));
+        saveEnrollmentWithDelay(createEnrollment(targetStudent, newestActiveClass, EnrollmentStatus.ACTIVE));
+        saveEnrollmentWithDelay(createEnrollment(targetStudent, ignoredStatusClass, EnrollmentStatus.LEFT));
+        saveEnrollmentWithDelay(createEnrollment(otherStudent, otherStudentClass, EnrollmentStatus.ACTIVE));
+
+        return targetStudent.getId();
+    }
+
+    private void saveEnrollmentWithDelay(Enrollment enrollment) throws InterruptedException {
+        enrollmentRepository.saveAndFlush(enrollment);
+        Thread.sleep(5);
     }
 
     private User createTeacher(String email, String fullName) {

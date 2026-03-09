@@ -8,13 +8,20 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.lms_backend.dto.dashboard.StudentDashboardResponse;
 import com.example.lms_backend.dto.dashboard.TeacherDashboardResponse;
 import com.example.lms_backend.entity.CourseClass;
+import com.example.lms_backend.entity.Enrollment;
+import com.example.lms_backend.entity.User;
+import com.example.lms_backend.entity.enums.EnrollmentStatus;
 import com.example.lms_backend.repository.CourseClassRepository;
 import com.example.lms_backend.repository.EnrollmentRepository;
 
 @Service
 public class DashboardService {
+    private static final List<EnrollmentStatus> STUDENT_DASHBOARD_STATUSES = List.of(
+            EnrollmentStatus.ACTIVE,
+            EnrollmentStatus.COMPLETED);
 
     private final CourseClassRepository courseClassRepository;
     private final EnrollmentRepository enrollmentRepository;
@@ -65,5 +72,41 @@ public class DashboardService {
                 activeClasses.size(),
                 totalCompletedClasses,
                 classSummaries);
+    }
+
+    @Transactional(readOnly = true)
+    public StudentDashboardResponse getStudentDashboard(UUID studentId) {
+        List<Enrollment> dashboardEnrollments = enrollmentRepository.findDashboardEnrollmentsByStudentIdAndStatuses(
+                studentId,
+                STUDENT_DASHBOARD_STATUSES);
+
+        List<Enrollment> activeEnrollments = dashboardEnrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.ACTIVE)
+                .toList();
+        int totalCompletedClasses = (int) dashboardEnrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == EnrollmentStatus.COMPLETED)
+                .count();
+
+        List<StudentDashboardResponse.ActiveClassSummary> activeClasses = activeEnrollments.stream()
+                .map(this::mapToActiveClassSummary)
+                .toList();
+
+        return new StudentDashboardResponse(
+                activeClasses.size(),
+                totalCompletedClasses,
+                activeClasses);
+    }
+
+    private StudentDashboardResponse.ActiveClassSummary mapToActiveClassSummary(Enrollment enrollment) {
+        CourseClass courseClass = enrollment.getCourseClass();
+        User teacher = courseClass.getTeacher();
+
+        return new StudentDashboardResponse.ActiveClassSummary(
+                courseClass.getId(),
+                courseClass.getCode(),
+                courseClass.getSemester(),
+                courseClass.getCourse().getName(),
+                teacher != null ? teacher.getFullName() : null,
+                enrollment.getCreatedAt());
     }
 }
