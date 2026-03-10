@@ -27,6 +27,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final String dummyPasswordHash;
 
     private static final long REFRESH_TOKEN_VALIDITY_DAYS = 7;
     private static final long ACCESS_TOKEN_VALIDITY_MINUTES = 15;
@@ -40,6 +41,8 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        // SECURITY: Generate a dummy hash on startup for constant-time checking to prevent user enumeration
+        this.dummyPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     @Transactional
@@ -61,8 +64,14 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        if (user == null) {
+            // SECURITY: Mitigate timing attacks by checking password against a dummy hash
+            // This ensures login response time is consistent whether the user exists or not.
+            passwordEncoder.matches(request.password(), this.dummyPasswordHash);
+            throw new BadCredentialsException("Invalid email or password");
+        }
+
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new BadCredentialsException("Invalid email or password");
         }
