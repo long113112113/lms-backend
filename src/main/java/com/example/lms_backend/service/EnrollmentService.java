@@ -147,14 +147,19 @@ public class EnrollmentService {
         User student = enrollment.getStudent();
         CourseClass courseClass = enrollment.getCourseClass();
         Course course = courseClass.getCourse();
+        User teacher = courseClass.getTeacher();
+        String teacherName = teacher != null ? teacher.getFullName() : null;
+
         return new EnrollmentResponse(
                 enrollment.getId(),
-                student.getId(),
-                student.getFullName(),
-                student.getEmail(),
+                student != null ? student.getId() : null,
+                student != null ? student.getFullName() : "Deleted User",
+                student != null ? student.getEmail() : null,
                 courseClass.getId(),
                 courseClass.getCode(),
                 course.getName(),
+                courseClass.getSemester(),
+                teacherName,
                 enrollment.getStatus().name(),
                 enrollment.getCreatedAt());
     }

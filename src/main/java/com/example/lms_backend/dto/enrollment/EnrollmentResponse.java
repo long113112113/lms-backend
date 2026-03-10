@@ -4,13 +4,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record EnrollmentResponse(
-        UUID enrollmentId,
-        UUID studentId,
-        String studentName,
-        String studentEmail,
-        UUID courseClassId,
-        String courseClassCode,
-        String courseName,
-        String status,
-        Instant createdAt) {
+                UUID enrollmentId,
+                UUID studentId,
+                String studentName,
+                String studentEmail,
+                UUID courseClassId,
+                String courseClassCode,
+                String courseName,
+                String semester,
+                String teacherName,
+                String status,
+                Instant createdAt) {
 }

@@ -80,6 +80,8 @@ class EnrollmentControllerTest {
                 CLASS_ID,
                 "CS101-A",
                 "Intro to CS",
+                "Fall 2026",
+                "Dr. Teacher",
                 "ACTIVE",
                 Instant.now());
     }
