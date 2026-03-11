@@ -4,6 +4,7 @@ import com.example.lms_backend.entity.enums.Role;
 import java.util.UUID;
 import java.time.Instant;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.SQLRestriction;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -23,6 +24,8 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // SECURITY: Prevent password hash from being exposed if the entity is directly serialized
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
