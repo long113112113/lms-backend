@@ -36,7 +36,8 @@ public class RefreshToken {
     @Column(name = "device_id", nullable = false, length = 100)
     private String deviceId;
 
-    @Column(name = "device_name")
+    // SECURITY: Add length constraint to prevent storage DoS via unlimited VARCHAR
+    @Column(name = "device_name", length = 255)
     private String deviceName;
 
     @Column(name = "expiry_date", nullable = false)
