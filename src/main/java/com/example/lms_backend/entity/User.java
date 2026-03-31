@@ -6,6 +6,7 @@ import java.time.Instant;
 
 import org.hibernate.annotations.SQLRestriction;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,6 +24,8 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // SECURITY: Prevents password hashes from ever being leaked if User entities are serialized directly
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
