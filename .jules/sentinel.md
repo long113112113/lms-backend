@@ -1,0 +1,6 @@
+## 2026-04-09 — Fixed SQL Exposure, Missing Length Constraints, and Potential Hash Leakage
+**Vulnerability:** SQL queries and schema exposed in production logs; `deviceName` column in `RefreshToken` bounded incorrectly resulting in unbounded string allocation; Entity fields for `password` were exposed to Jackson inadvertently without a `@JsonIgnore` check.
+**Root Cause:** Spring JPA `show-sql` property incorrectly pushed to default properties configurations rather than only active locally. Overlooked explicitly sizing all `@Column` fields across entity mappings resulting in defaults. Jackson default object mapper behaviour mapping private properties during serialization.
+**Fix Applied:** Disabled SQL properties in `src/main/resources/application.properties`. Bound `length = 255` in `src/main/java/com/example/lms_backend/entity/RefreshToken.java`. Handled field ignore in `src/main/java/com/example/lms_backend/entity/User.java`.
+**Side Effects:** None.
+**Prevention:** Configure sensitive persistence parameters natively in `dev` profiles (e.g. `application-dev.properties`). Adopt comprehensive `@Column` bound limit conventions on Strings. Continually practice explicit property blocking on sensitive field models (`@JsonIgnore`).
