@@ -34,12 +34,16 @@ public class AuthService {
     public record AuthResult(String accessToken, String refreshToken) {
     }
 
+    // SECURITY: Dummy password hash to mitigate timing attacks for user enumeration
+    private final String userNotFoundPassword;
+
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtEncoder jwtEncoder,
             RefreshTokenRepository refreshTokenRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userNotFoundPassword = this.passwordEncoder.encode("userNotFoundPassword");
     }
 
     @Transactional
@@ -61,9 +65,13 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
-        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+
+        // SECURITY: Mitigate timing attacks by performing the password check even if user is not found
+        String expectedPassword = (user != null) ? user.getPassword() : this.userNotFoundPassword;
+        boolean passwordMatches = passwordEncoder.matches(request.password(), expectedPassword);
+
+        if (user == null || !passwordMatches) {
             throw new BadCredentialsException("Invalid email or password");
         }
         RefreshToken refreshToken = refreshTokenRepository
