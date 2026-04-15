@@ -1,6 +1,7 @@
 package com.example.lms_backend.entity;
 
 import com.example.lms_backend.entity.enums.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.UUID;
 import java.time.Instant;
 
@@ -23,6 +24,8 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // SECURITY: Prevent password hash from leaking if entity is serialized
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
