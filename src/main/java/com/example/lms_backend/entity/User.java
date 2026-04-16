@@ -23,6 +23,8 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
+    // SECURITY: Exclude password from JSON serialization to prevent accidental leakage
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(nullable = false)
     private String password;
 
